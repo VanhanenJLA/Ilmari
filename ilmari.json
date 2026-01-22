@@ -1,0 +1,254 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "473983973986420329"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Deployment location"
+      }
+    },
+    "env": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [
+        "dev",
+        "prod"
+      ]
+    },
+    "projectName": {
+      "type": "string",
+      "defaultValue": "ilmari",
+      "metadata": {
+        "description": "Project name"
+      }
+    },
+    "suffixLength": {
+      "type": "int",
+      "defaultValue": 5,
+      "metadata": {
+        "description": "Short unique suffix length (recommended 4-6)"
+      }
+    }
+  },
+  "variables": {
+    "tags": {
+      "project": "[parameters('projectName')]",
+      "environment": "[parameters('env')]"
+    },
+    "suffix": "[toLower(take(uniqueString(subscription().id, resourceGroup().id, parameters('projectName'), parameters('env')), parameters('suffixLength')))]",
+    "adtDataOwnerRoleId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'bcd981a7-7f74-457b-83e1-cceb9e632ffe')]",
+    "nameLogAnalytics": "[format('log-{0}-{1}', parameters('projectName'), parameters('env'))]",
+    "nameAppInsights": "[format('appi-{0}-{1}', parameters('projectName'), parameters('env'))]",
+    "nameAsp": "[format('asp-{0}-{1}', parameters('projectName'), parameters('env'))]",
+    "nameAdt": "[format('dt-{0}-{1}', parameters('projectName'), parameters('env'))]",
+    "nameIotHub": "[format('iot-{0}-{1}', parameters('projectName'), parameters('env'))]",
+    "nameSbns": "[format('sbns-{0}-{1}', parameters('projectName'), parameters('env'))]",
+    "nameFunc": "[format('func-{0}-{1}', parameters('projectName'), parameters('env'))]",
+    "nameStorage": "[toLower(format('st{0}{1}', parameters('projectName'), parameters('env')))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('nameLogAnalytics')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "retentionInDays": 30,
+        "sku": {
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('nameAppInsights')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('nameLogAnalytics'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('nameLogAnalytics'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('nameStorage')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[variables('nameSbns')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "sku": {
+        "name": "Standard",
+        "tier": "Standard"
+      },
+      "properties": {
+        "minimumTlsVersion": "1.2",
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/queues",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[format('{0}/{1}', variables('nameSbns'), format('sbq-{0}-{1}', parameters('projectName'), parameters('env')))]",
+      "properties": {
+        "lockDuration": "PT1M",
+        "maxSizeInMegabytes": 1024,
+        "deadLetteringOnMessageExpiration": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', variables('nameSbns'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Devices/IotHubs",
+      "apiVersion": "2023-06-30",
+      "name": "[variables('nameIotHub')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "sku": {
+        "name": "S1",
+        "capacity": 1
+      },
+      "properties": {
+        "publicNetworkAccess": "Enabled",
+        "features": "None"
+      }
+    },
+    {
+      "type": "Microsoft.DigitalTwins/digitalTwinsInstances",
+      "apiVersion": "2023-01-31",
+      "name": "[variables('nameAdt')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('nameAsp')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('nameFunc')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]",
+      "kind": "functionapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('nameAsp'))]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "ftpsState": "Disabled",
+          "minTlsVersion": "1.2",
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet-isolated"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('nameStorage'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('nameStorage')), '2023-01-01').keys[0].value, environment().suffixes.storage)]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('nameAppInsights')), '2020-02-02').ConnectionString]"
+            },
+            {
+              "name": "ADT_SERVICE_URL",
+              "value": "[format('https://{0}.api.{1}.digitaltwins.azure.net', variables('nameAdt'), toLower(parameters('location')))]"
+            },
+            {
+              "name": "SB_NAMESPACE",
+              "value": "[variables('nameSbns')]"
+            },
+            {
+              "name": "SB_QUEUE",
+              "value": "[format('sbq-{0}-{1}', parameters('projectName'), parameters('env'))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DigitalTwins/digitalTwinsInstances', variables('nameAdt'))]",
+        "[resourceId('Microsoft.Insights/components', variables('nameAppInsights'))]",
+        "[resourceId('Microsoft.Web/serverfarms', variables('nameAsp'))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces', variables('nameSbns'))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/queues', variables('nameSbns'), format('sbq-{0}-{1}', parameters('projectName'), parameters('env')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('nameStorage'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.DigitalTwins/digitalTwinsInstances/{0}', variables('nameAdt'))]",
+      "name": "[guid(resourceId('Microsoft.DigitalTwins/digitalTwinsInstances', variables('nameAdt')), resourceId('Microsoft.Web/sites', variables('nameFunc')), variables('adtDataOwnerRoleId'))]",
+      "properties": {
+        "roleDefinitionId": "[variables('adtDataOwnerRoleId')]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('nameFunc')), '2022-09-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DigitalTwins/digitalTwinsInstances', variables('nameAdt'))]",
+        "[resourceId('Microsoft.Web/sites', variables('nameFunc'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "adtName": {
+      "type": "string",
+      "value": "[variables('nameAdt')]"
+    },
+    "adtResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.DigitalTwins/digitalTwinsInstances', variables('nameAdt'))]"
+    }
+  }
+}

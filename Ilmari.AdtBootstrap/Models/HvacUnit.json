@@ -1,0 +1,26 @@
+
+{
+  "@context": "dtmi:dtdl:context;2",
+  "@id": "dtmi:ilmari:building:HvacUnit;1",
+  "@type": "Interface",
+  "displayName": "HVAC Unit",
+  "contents": [
+    { "@type": "Property", "name": "mode", "schema": "string", "description": "off|heat|cool|eco|vent" },
+    { "@type": "Property", "name": "setpointC", "schema": "double" },
+    { "@type": "Property", "name": "powerKw", "schema": "double" },
+    { "@type": "Property", "name": "faultCode", "schema": "string" },
+
+    {
+      "@type": "Command",
+      "name": "setMode",
+      "request": { "name": "mode", "schema": "string" },
+      "response": { "name": "accepted", "schema": "boolean" }
+    },
+    {
+      "@type": "Command",
+      "name": "setSetpoint",
+      "request": { "name": "setpointC", "schema": "double" },
+      "response": { "name": "accepted", "schema": "boolean" }
+    }
+  ]
+}

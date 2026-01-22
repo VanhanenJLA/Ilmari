@@ -1,0 +1,11 @@
+{
+  "@context": "dtmi:dtdl:context;2",
+  "@id": "dtmi:ilmari:building:Building;1",
+  "@type": "Interface",
+  "displayName": "Building",
+  "contents": [
+    { "@type": "Property", "name": "name", "schema": "string" },
+    { "@type": "Property", "name": "site", "schema": "string" },
+    { "@type": "Relationship", "name": "contains", "target": "dtmi:ilmari:building:Floor;1" }
+  ]
+}

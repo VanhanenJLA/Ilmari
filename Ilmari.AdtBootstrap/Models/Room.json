@@ -1,0 +1,19 @@
+{
+  "@context": "dtmi:dtdl:context;2",
+  "@id": "dtmi:ilmari:building:Room;1",
+  "@type": "Interface",
+  "displayName": "Room",
+  "contents": [
+    { "@type": "Property", "name": "roomId", "schema": "string" },
+    { "@type": "Property", "name": "occupancy", "schema": "boolean" },
+    { "@type": "Property", "name": "occupancyConfidence", "schema": "double" },
+    { "@type": "Property", "name": "tempC", "schema": "double" },
+    { "@type": "Property", "name": "humidityPct", "schema": "double" },
+    { "@type": "Property", "name": "co2Ppm", "schema": "double" },
+    { "@type": "Property", "name": "energyKw", "schema": "double" },
+    { "@type": "Property", "name": "lastUpdated", "schema": "dateTime" },
+
+    { "@type": "Relationship", "name": "hasSensor", "target": "dtmi:ilmari:building:Sensor;1" },
+    { "@type": "Relationship", "name": "servedBy", "target": "dtmi:ilmari:building:HvacUnit;1" }
+  ]
+}

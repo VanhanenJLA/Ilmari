@@ -1,0 +1,13 @@
+{
+  "@context": "dtmi:dtdl:context;2",
+  "@id": "dtmi:ilmari:building:Sensor;1",
+  "@type": "Interface",
+  "displayName": "Sensor",
+  "contents": [
+    { "@type": "Property", "name": "sensorType", "schema": "string" },
+    { "@type": "Property", "name": "unit", "schema": "string" },
+    { "@type": "Property", "name": "lastValue", "schema": "double" },
+    { "@type": "Property", "name": "lastTimestamp", "schema": "dateTime" },
+    { "@type": "Property", "name": "status", "schema": "string" }
+  ]
+}

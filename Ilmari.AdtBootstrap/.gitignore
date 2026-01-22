@@ -1,0 +1,104 @@
+############################################
+# OS / Editor
+############################################
+.DS_Store
+Thumbs.db
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+*.swp
+*.swo
+
+############################################
+# .NET / Visual Studio
+############################################
+bin/
+obj/
+out/
+Debug/
+Release/
+
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+############################################
+# .NET build artifacts
+############################################
+*.dll
+*.exe
+*.pdb
+*.cache
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+############################################
+# Azure Functions
+############################################
+local.settings.json
+.azurefunctions/
+.funcignore
+
+############################################
+# Azure / Bicep / ARM
+############################################
+*.jsonc
+*.parameters.json
+*.generated.json
+*.bicep.build.json
+
+# If you generate ARM templates from bicep
+*.arm.json
+
+############################################
+# Secrets / credentials
+############################################
+.env
+.env.*
+*.secret
+*.secrets
+*.pem
+*.key
+*.pfx
+*.cer
+
+############################################
+# Azure CLI / tooling
+############################################
+.azure/
+.azurite/
+
+############################################
+# Logs / telemetry
+############################################
+*.log
+logs/
+LogFiles/
+
+############################################
+# PowerShell
+############################################
+*.ps1.user
+*.psm1.user
+
+############################################
+# Test / coverage
+############################################
+TestResults/
+coverage/
+coverage.*
+
+############################################
+# Misc
+############################################
+node_modules/
+dist/
+temp/
+tmp/
