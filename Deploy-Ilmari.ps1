@@ -15,13 +15,13 @@ param(
   [string]$ProjectName = 'ilmari',
   [string]$Location = 'switzerlandnorth',
   [string]$ResourceGroupName = "rg-$ProjectName-$Env",
-  [string]$TemplateFile = ".\$ProjectName.bicep",
+  [string]$TemplateFile = "./$ProjectName.bicep",
 
   # Optional: run a .NET bootstrapper after setting ADT_SERVICE_URL
   [switch]$RunAdtBootstrap,
 
   # If running bootstrapper: path to csproj
-  [string]$BootstrapProject = ".\Ilmari.AdtBootstrap\Ilmari.AdtBootstrap.csproj"
+  [string]$BootstrapProject = "./Ilmari.AdtBootstrap/Ilmari.AdtBootstrap.csproj"
 )
 
 $ErrorActionPreference = "Stop"
