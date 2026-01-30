@@ -102,7 +102,7 @@ resource iotHub 'Microsoft.Devices/IotHubs@2023-06-30' = {
     features: 'None'
   }
 }
-
+// ADT is fucked on student sub. The resource has no overlapping allowed regions with Studen Sub system policy. RIP.
 resource adt 'Microsoft.DigitalTwins/digitalTwinsInstances@2023-01-31' = {
   name: nameAdt
   location: location
