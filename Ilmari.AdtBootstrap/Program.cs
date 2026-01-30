@@ -7,7 +7,7 @@ static string RequireEnv(string name) =>
     Environment.GetEnvironmentVariable(name) ?? throw new InvalidOperationException($"Missing env var: {name}");
 
 // var adtUrl = RequireEnv("ADT_SERVICE_URL"); // e.g. https://dt-ilmari-dev.api.neu.digitaltwins.azure.net
-var adtUrl = "https://dt-ilmari-dev.api.neu.digitaltwins.azure.net"; // TODO: Hard coded.
+var adtUrl = "https://dt-ilmari-dev.api.sno.digitaltwins.azure.net"; // TODO: Hard coded.
 var env = Environment.GetEnvironmentVariable("ILMARI_ENV") ?? "dev";
 
 var client = new DigitalTwinsClient(new Uri(adtUrl), new DefaultAzureCredential());

@@ -13,7 +13,7 @@ param(
   [ValidateSet('dev','prod')]
   [string]$Env = 'dev',
   [string]$ProjectName = 'ilmari',
-  [string]$Location = 'northeurope',
+  [string]$Location = 'switzerlandnorth',
   [string]$ResourceGroupName = "rg-$ProjectName-$Env",
   [string]$TemplateFile = ".\$ProjectName.bicep",
 
