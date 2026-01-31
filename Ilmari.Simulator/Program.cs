@@ -2,12 +2,6 @@
 using System.Text.Json;
 using Microsoft.Azure.Devices.Client;
 
-static string RequireEnv(string name) => Environment.GetEnvironmentVariable(name) ?? throw new InvalidOperationException($"Missing env var: {name}");
-
-static int EnvInt(string name, int fallback) => int.TryParse(Environment.GetEnvironmentVariable(name), out var v) ? v : fallback;
-
-static string EnvStr(string name, string fallback) => Environment.GetEnvironmentVariable(name) ?? fallback;
-
 var connStr = RequireEnv("IOTHUB_DEVICE_CONNECTION_STRING");
 var env = EnvStr("ILMARI_ENV", "dev");
 var roomCount = EnvInt("SIM_ROOMS", 5);
@@ -87,14 +81,26 @@ while (true)
 
         await deviceClient.SendEventAsync(msg);
         Console.WriteLine(
-            $"{now:HH:mm:ss} sent {room.RoomId} occ={room.Occupancy} temp={payload.tempC} co2={payload.co2Ppm} kW={payload.energyKw} hvac={payload.hvacMode}/{payload.hvacPowerKw}");
+            $"{now:HH:mm:ss} sent {room.RoomId} occ={room.Occupancy} temp={payload.TempC} co2={payload.Co2Ppm} kW={payload.EnergyKw} hvac={payload.HvacMode}/{payload.HvacPowerKw}");
     }
 
     await Task.Delay(intervalMs);
 }
 
-// -------- Types & functions --------
+static string EnvStr(string name, string fallback) =>
+    Environment.GetEnvironmentVariable(name) 
+    ?? fallback;
 
+static int EnvInt(string name, int fallback) =>
+    int.TryParse(Environment.GetEnvironmentVariable(name), out var v) 
+        ? v 
+        : fallback;
+
+static string RequireEnv(string name) =>
+    Environment.GetEnvironmentVariable(name) 
+    ?? throw new InvalidOperationException($"Missing env var: {name}");
+
+// -------- Types & functions --------
 static void ApplyScenario(TimeSpan elapsed, List<RoomState> rooms)
 {
     // Reset defaults each tick
@@ -190,40 +196,24 @@ static void StepRoom(DateTimeOffset now, RoomState r, Random rng)
     r.EnergyKw = Clamp(r.HvacPowerKw + plugLoad + (rng.NextDouble() - 0.5) * 0.05, 0.05, 5.0);
 }
 
-static double Clamp(double v, double min, double max)
-{
-    return Math.Min(max, Math.Max(min, v));
-}
+static double Clamp(double v, double min, double max) =>
+    Math.Min(max, Math.Max(min, v));
 
 internal record Telemetry(
-    string roomId,
-    DateTimeOffset ts,
-    double tempC,
-    double humidityPct,
-    double co2Ppm,
-    bool occupancy,
-    double energyKw,
-    double hvacPowerKw,
-    string hvacMode,
-    double setpointC
+    string RoomId,
+    DateTimeOffset Ts,
+    double TempC,
+    double HumidityPct,
+    double Co2Ppm,
+    bool Occupancy,
+    double EnergyKw,
+    double HvacPowerKw,
+    string HvacMode,
+    double SetpointC
 );
 
 internal class RoomState
 {
-    public RoomState(string RoomId, double TempC, double HumidityPct, double Co2Ppm, bool Occupancy,
-        double EnergyKw, double HvacPowerKw, string HvacMode, double SetpointC)
-    {
-        this.RoomId = RoomId;
-        this.TempC = TempC;
-        this.HumidityPct = HumidityPct;
-        this.Co2Ppm = Co2Ppm;
-        this.Occupancy = Occupancy;
-        this.EnergyKw = EnergyKw;
-        this.HvacPowerKw = HvacPowerKw;
-        this.HvacMode = HvacMode;
-        this.SetpointC = SetpointC;
-    }
-
     public string RoomId { get; }
     public double TempC { get; set; }
     public double HumidityPct { get; set; }
@@ -238,4 +228,26 @@ internal class RoomState
     // Scenario flags
     public bool WasteStuckHvac { get; set; }
     public bool ComfortDriftHot { get; set; }
+    
+    public RoomState(
+        string roomId,
+        double tempC,
+        double humidityPct,
+        double co2Ppm,
+        bool occupancy,
+        double energyKw,
+        double hvacPowerKw,
+        string hvacMode,
+        double setpointC)
+    {
+        RoomId = roomId;
+        TempC = tempC;
+        HumidityPct = humidityPct;
+        Co2Ppm = co2Ppm;
+        Occupancy = occupancy;
+        EnergyKw = energyKw;
+        HvacPowerKw = hvacPowerKw;
+        HvacMode = hvacMode;
+        SetpointC = setpointC;
+    }
 }
