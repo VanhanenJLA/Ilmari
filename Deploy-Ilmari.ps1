@@ -116,7 +116,12 @@ Write-Host "Function App:     $functionAppName"
 
 # 7) Set ADT_SERVICE_URL using real ADT hostname (api.neu...)
 Write-Host "Fetching ADT hostname..."
-$adtHost = az dt show -g $ResourceGroupName -n $adtName --query hostName -o tsv
+$adtHost = az resource show `
+  -g $ResourceGroupName `
+  -n $adtName `
+  --resource-type "Microsoft.DigitalTwins/digitalTwinsInstances" `
+  --query "properties.hostName" -o tsv
+
 if ([string]::IsNullOrWhiteSpace($adtHost)) {
   throw "Failed to fetch ADT hostName for $adtName"
 }
