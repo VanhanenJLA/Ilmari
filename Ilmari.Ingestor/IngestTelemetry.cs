@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Azure.DigitalTwins.Core;
 using Azure.Identity;
 using Azure;
@@ -25,38 +24,42 @@ public class IngestTelemetry
         var adtUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL")
             ?? throw new InvalidOperationException("Missing ADT_SERVICE_URL");
 
-        // In Azure: Managed Identity (your Bicep already granted DT Data Owner to the Function MI)
-        // Locally: uses Azure CLI / VS / etc.
-        _dt = new DigitalTwinsClient(new Uri(adtUrl), new DefaultAzureCredential());
+        var cred = new DefaultAzureCredential();
+        _dt = new DigitalTwinsClient(new Uri(adtUrl), cred);
     }
 
     [Function("IngestTelemetry")]
     public async Task Run(
         [EventHubTrigger("%IOTHUB_EVENTHUB_PATH%", Connection = "IOTHUB_EVENTHUB_CONNECTION")]
-        byte[] body,
+        string[] events,
         FunctionContext context)
     {
         var ct = context.CancellationToken;
 
-        Telemetry? t;
-        try
+        foreach (var json in events)
         {
-            var json = Encoding.UTF8.GetString(body);
-            t = JsonSerializer.Deserialize<Telemetry>(json, JsonOpts);
-
-            if (t is null || string.IsNullOrWhiteSpace(t.RoomId))
+            Telemetry? t;
+            try
             {
-                _log.LogWarning("Telemetry missing RoomId. Payload: {Payload}", json);
-                return;
+                t = JsonSerializer.Deserialize<Telemetry>(json, JsonOpts);
+                if (t is null || string.IsNullOrWhiteSpace(t.RoomId))
+                {
+                    _log.LogWarning("Telemetry missing RoomId. Payload: {Payload}", json);
+                    continue;
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _log.LogError(ex, "Failed to parse telemetry.");
-            return;
-        }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Failed to parse telemetry. Payload: {Payload}", json);
+                continue;
+            }
 
-        // Patch Room twin (IDs match your bootstrapper: bldg-ilmari-dev-room-101 etc.)
+            await PatchAdtAsync(t, ct);
+        }
+    }
+
+    private async Task PatchAdtAsync(Telemetry t, CancellationToken ct)
+    {
         var patch = new JsonPatchDocument();
         patch.AppendReplace("/tempC", t.TempC);
         patch.AppendReplace("/humidityPct", t.HumidityPct);
@@ -65,38 +68,19 @@ public class IngestTelemetry
         patch.AppendReplace("/energyKw", t.EnergyKw);
         patch.AppendReplace("/lastUpdated", t.Ts);
 
-        try
-        {
-            await _dt.UpdateDigitalTwinAsync(t.RoomId, patch, cancellationToken: ct);
-            _log.LogInformation("Updated Room {RoomId}: occ={Occ} temp={Temp} co2={Co2} kW={Kw}",
-                t.RoomId, t.Occupancy, t.TempC, t.Co2Ppm, t.EnergyKw);
-        }
-        catch (RequestFailedException ex) when (ex.Status == 404)
-        {
-            _log.LogError("Room twin not found: {RoomId}. Did you bootstrap ADT in the same env?", t.RoomId);
-        }
+        await _dt.UpdateDigitalTwinAsync(t.RoomId, patch, cancellationToken: ct);
 
-        // OPTIONAL: patch HVAC twin too (your bootstrapper used "<roomId>-hvac")
         var hvacTwinId = $"{t.RoomId}-hvac";
         var hvacPatch = new JsonPatchDocument();
         hvacPatch.AppendReplace("/mode", t.HvacMode);
         hvacPatch.AppendReplace("/setpointC", t.SetpointC);
         hvacPatch.AppendReplace("/powerKw", t.HvacPowerKw);
 
-        try
-        {
-            await _dt.UpdateDigitalTwinAsync(hvacTwinId, hvacPatch, cancellationToken: ct);
-            _log.LogInformation("Updated HVAC {HvacId}: mode={Mode} set={Set} kW={Kw}",
-                hvacTwinId, t.HvacMode, t.SetpointC, t.HvacPowerKw);
-        }
-        catch (RequestFailedException ex) when (ex.Status == 404)
-        {
-            // Not fatal
-            _log.LogWarning("HVAC twin not found: {HvacId} (skipping).", hvacTwinId);
-        }
+        // best-effort
+        try { await _dt.UpdateDigitalTwinAsync(hvacTwinId, hvacPatch, cancellationToken: ct); }
+        catch (RequestFailedException ex) when (ex.Status == 404) { }
     }
-
-    // Matches your simulator JSON
+    
     public record Telemetry(
         string RoomId,
         DateTimeOffset Ts,
