@@ -58,7 +58,8 @@ $providers = @(
   "Microsoft.Insights",
   "Microsoft.OperationalInsights",
   "Microsoft.Storage",
-  "Microsoft.Authorization"
+  "Microsoft.Authorization",
+  "Microsoft.AzureIot"
 )
 
 foreach ($p in $providers) {
@@ -185,6 +186,10 @@ Write-Host "Setting Function App appsetting ADT_SERVICE_URL=$adtServiceUrl"
 az functionapp config appsettings set `
   -g $ResourceGroupName -n $functionAppName `
   --settings "ADT_SERVICE_URL=$adtServiceUrl" | Out-Null
+
+#   TODO:
+#  "IOTHUB_EVENTHUB_PATH=$path" `
+#  "IOTHUB_EVENTHUB_CONNECTION=$conn" | Out-Null
 
 Write-Host "✅ App setting updated."
 
