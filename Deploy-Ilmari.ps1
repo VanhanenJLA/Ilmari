@@ -114,6 +114,59 @@ if ([string]::IsNullOrWhiteSpace($functionAppName)) {
 Write-Host "ADT instance:     $adtName"
 Write-Host "Function App:     $functionAppName"
 
+# 6.5) Ensure caller has ADT data-plane RBAC on the ADT instance (idempotent)
+Write-Host "Ensuring caller has Azure Digital Twins Data Owner on the ADT instance..."
+
+# Get ADT resource id (scope)
+$adtId = az resource show -g $ResourceGroupName -n $adtName `
+  --resource-type "Microsoft.DigitalTwins/digitalTwinsInstances" `
+  --query id -o tsv
+
+if ([string]::IsNullOrWhiteSpace($adtId)) {
+  throw "Failed to resolve ADT resource id for $adtName"
+}
+
+# Identify current signed-in principal
+$acct = az account show --query "{user:user.name, userType:user.type, tenant:tenantId}" -o json | ConvertFrom-Json
+
+# user.type is usually: "user" or "servicePrincipal"
+$principalObjectId = $null
+
+if ($acct.userType -eq "servicePrincipal") {
+  # When running under SP, user.name is often appId/clientId
+  $principalObjectId = az ad sp show --id $acct.user --query id -o tsv 2>$null
+} else {
+  # When running as a user
+  $principalObjectId = az ad signed-in-user show --query id -o tsv 2>$null
+}
+
+if ([string]::IsNullOrWhiteSpace($principalObjectId)) {
+  throw "Could not determine signed-in principal objectId. Are you able to query Entra ID? (az ad ...)"
+}
+
+$roleName = "Azure Digital Twins Data Owner"
+
+# Check if assignment already exists
+$existing = az role assignment list `
+  --assignee-object-id $principalObjectId `
+  --scope $adtId `
+  --query "[?roleDefinitionName=='$roleName'] | length(@)" -o tsv
+
+if ($existing -eq "0") {
+  Write-Host "Assigning role '$roleName' on scope: $adtId"
+  az role assignment create `
+    --assignee-object-id $principalObjectId `
+    --assignee-principal-type User `
+    --role $roleName `
+    --scope $adtId | Out-Null
+
+  # RBAC propagation can take a moment; this avoids immediate 403s in bootstrap
+  Write-Host "Waiting for RBAC propagation..."
+  Start-Sleep -Seconds 20
+} else {
+  Write-Host "Role already assigned."
+}
+
 # 7) Set ADT_SERVICE_URL using real ADT hostname (api.neu...)
 Write-Host "Fetching ADT hostname..."
 $adtHost = az resource show `
