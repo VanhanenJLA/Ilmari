@@ -81,7 +81,7 @@ az bicep build --file $TemplateFile 1>$null
 
 # 5) Deploy
 Write-Host "Deploying Bicep..."
-$deploymentName = "deploy-$ProjectName-$Env-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+$deploymentName = "deploy-$ProjectName-$Env" + (Get-Date -Format "yyyyMMdd-HHmmss")
 
 az deployment group create `
   --name $deploymentName `
@@ -97,18 +97,18 @@ Write-Host "Discovering Azure Digital Twins + Function App resources..."
 
 $adtName = az resource list -g $ResourceGroupName `
   --resource-type "Microsoft.DigitalTwins/digitalTwinsInstances" `
-  --query "[?starts_with(name, 'dt-$ProjectName-$Env-')].name | [0]" -o tsv
+  --query "[?starts_with(name, 'dt-$ProjectName-$Env')].name | [0]" -o tsv
 
 if ([string]::IsNullOrWhiteSpace($adtName)) {
-  throw "Could not find ADT instance in RG $ResourceGroupName with prefix dt-$ProjectName-$Env-"
+  throw "Could not find ADT instance in RG $ResourceGroupName with prefix dt-$ProjectName-$Env"
 }
 
 $functionAppName = az resource list -g $ResourceGroupName `
   --resource-type "Microsoft.Web/sites" `
-  --query "[?starts_with(name, 'func-$ProjectName-$Env-')].name | [0]" -o tsv
+  --query "[?starts_with(name, 'func-$ProjectName-$Env')].name | [0]" -o tsv
 
 if ([string]::IsNullOrWhiteSpace($functionAppName)) {
-  throw "Could not find Function App in RG $ResourceGroupName with prefix func-$ProjectName-$Env-"
+  throw "Could not find Function App in RG $ResourceGroupName with prefix func-$ProjectName-$Env"
 }
 
 Write-Host "ADT instance:     $adtName"
