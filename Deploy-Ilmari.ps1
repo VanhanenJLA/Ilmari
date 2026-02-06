@@ -112,8 +112,17 @@ if ([string]::IsNullOrWhiteSpace($functionAppName)) {
   throw "Could not find Function App in RG $ResourceGroupName with prefix func-$ProjectName-$Env"
 }
 
+$iotHubName = az resource list -g $ResourceGroupName `
+  --resource-type "Microsoft.Devices/IotHubs" `
+  --query "[?starts_with(name, 'iot-$ProjectName-$Env')].name | [0]" -o tsv
+
+if ([string]::IsNullOrWhiteSpace($iotHubName)) {
+  throw "Could not find IoT Hub in RG $ResourceGroupName with prefix iot-$ProjectName-$Env"
+}
+
 Write-Host "ADT instance:     $adtName"
 Write-Host "Function App:     $functionAppName"
+Write-Host "IoT Hub:          $iotHubName"
 
 # 6.5) Ensure caller has ADT data-plane RBAC on the ADT instance (idempotent)
 Write-Host "Ensuring caller has Azure Digital Twins Data Owner on the ADT instance..."
@@ -181,15 +190,58 @@ if ([string]::IsNullOrWhiteSpace($adtHost)) {
 }
 
 $adtServiceUrl = "https://$adtHost"
-Write-Host "Setting Function App appsetting ADT_SERVICE_URL=$adtServiceUrl"
+Write-Host "Fetching IoT Hub Event Hub-compatible settings..."
+
+$ehEndpoint = az iot hub show `
+  --name $iotHubName `
+  --query "properties.eventHubEndpoints.events.endpoint" -o tsv
+
+$ehPath = az iot hub show `
+  --name $iotHubName `
+  --query "properties.eventHubEndpoints.events.path" -o tsv
+
+if ([string]::IsNullOrWhiteSpace($ehEndpoint)) {
+  throw "Failed to fetch Event Hub-compatible endpoint for $iotHubName"
+}
+
+if ([string]::IsNullOrWhiteSpace($ehPath)) {
+  $ehPath = "messages/events"
+}
+
+$iotConnStr = az iot hub connection-string show `
+  --hub-name $iotHubName `
+  --policy-name iothubowner `
+  --query "connectionString" -o tsv
+
+if ([string]::IsNullOrWhiteSpace($iotConnStr)) {
+  throw "Failed to fetch IoT Hub connection string for $iotHubName"
+}
+
+$csParts = @{}
+foreach ($p in ($iotConnStr -split ';')) {
+  if ($p -match '=') {
+    $kv = $p -split '=', 2
+    $csParts[$kv[0]] = $kv[1]
+  }
+}
+
+$sharedAccessKeyName = $csParts["SharedAccessKeyName"]
+$sharedAccessKey = $csParts["SharedAccessKey"]
+
+if ([string]::IsNullOrWhiteSpace($sharedAccessKeyName) -or [string]::IsNullOrWhiteSpace($sharedAccessKey)) {
+  throw "Failed to parse SharedAccessKeyName/SharedAccessKey from IoT Hub connection string"
+}
+
+$ehConnStr = "Endpoint=$ehEndpoint;SharedAccessKeyName=$sharedAccessKeyName;SharedAccessKey=$sharedAccessKey;EntityPath=$iotHubName"
+
+Write-Host "Updating Function App app settings..."
 
 az functionapp config appsettings set `
   -g $ResourceGroupName -n $functionAppName `
-  --settings "ADT_SERVICE_URL=$adtServiceUrl" | Out-Null
-
-#   TODO:
-#  "IOTHUB_EVENTHUB_PATH=$path" `
-#  "IOTHUB_EVENTHUB_CONNECTION=$conn" | Out-Null
+  --settings `
+    "ADT_SERVICE_URL=$adtServiceUrl" `
+    "IOTHUB_EVENTHUB_PATH=$ehPath" `
+    "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr" | Out-Null
 
 Write-Host "✅ App setting updated."
 
