@@ -32,7 +32,7 @@ var nameAsp          = 'asp-${projectName}-${env}'
 var nameAdt          = 'dt-${projectName}-${env}'
 var nameIotHub       = 'iot-${projectName}-${env}'
 var nameSbns         = 'sbns-${projectName}-${env}'
-var nameFunc         = 'func-${projectName}-${env}'
+var nameFunc         = 'func-${projectName}-${env}-${suffix}'
 // -${suffix}
 
 // Storage: no hyphens, lowercase/alnum, 3-24 chars, globally unique
