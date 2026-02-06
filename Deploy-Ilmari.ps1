@@ -59,7 +59,7 @@ $providers = @(
   "Microsoft.OperationalInsights",
   "Microsoft.Storage",
   "Microsoft.Authorization",
-  "Microsoft.AzureIot"
+  "Microsoft.Devices"
 )
 
 foreach ($p in $providers) {
