@@ -16,7 +16,8 @@ var tags = {
 }
 
 // short suffix for globally-unique names (and to avoid collisions)
-var suffix = toLower(take(uniqueString(subscription().id, resourceGroup().id, projectName, env), suffixLength))
+var unique = uniqueString(subscription().id, resourceGroup().id, projectName, env)
+var suffix = toLower(take(unique, suffixLength))
 
 // Storage keys for AzureWebJobsStorage (inline; no user-defined function)
 var storageKeys = storage.listKeys().keys
@@ -34,8 +35,8 @@ var nameSbns         = 'sbns-${projectName}-${env}'
 var nameFunc         = 'func-${projectName}-${env}'
 // -${suffix}
 
-// Storage: no hyphens, lowercase/alnum, 3-24 chars, global unique
-var nameStorage      = toLower('st${projectName}${env}')
+// Storage: no hyphens, lowercase/alnum, 3-24 chars, globally unique
+var nameStorage      = toLower('st${projectName}${env}${suffix}')
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: nameLogAnalytics
