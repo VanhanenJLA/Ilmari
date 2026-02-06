@@ -12,7 +12,7 @@ Write-Host "Provisioning simulated IoT device..."
 # Find IoT Hub
 $iotHubName = az resource list -g $ResourceGroupName `
   --resource-type "Microsoft.Devices/IotHubs" `
-  --query "[?starts_with(name, 'iot-$ProjectName-$Env-')].name | [0]" -o tsv
+  --query "[?starts_with(name, 'iot-$ProjectName-$Env')].name | [0]" -o tsv
 
 if ([string]::IsNullOrWhiteSpace($iotHubName)) {
     throw "IoT Hub not found in RG $ResourceGroupName"
