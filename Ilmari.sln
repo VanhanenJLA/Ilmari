@@ -14,8 +14,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Support", "Support", "{D270
 		README.md = README.md
 		Deploy-Ilmari.ps1 = Deploy-Ilmari.ps1
 		ilmari.bicep = ilmari.bicep
-		Deploy-Simulator.ps1 = Deploy-Simulator.ps1
+		Deploy-Simulated-Device.ps1 = Deploy-Simulated-Device.ps1
 		VIBEME.md = VIBEME.md
+		Teardown.ps1 = Teardown.ps1
 	EndProjectSection
 EndProject
 Global
