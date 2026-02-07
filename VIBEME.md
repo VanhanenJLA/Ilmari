@@ -3,7 +3,7 @@
 ### 🧠 Project Overview
 
 Ilmari is a cloud-native Industrial IoT (IIoT) reference implementation on Azure, focused on telemetry ingestion, digital twins, and observability.
-The goal is to simulate, ingest, process, and model building/room sensor data using modern Azure services and .NET isolated Azure Functions.
+The goal is to simulate, ingest, process, and model building telemetry using Azure services and .NET isolated Azure Functions.
 
 This is not a demo-only project — it’s structured as a realistic, production-leaning architecture with infrastructure-as-code, environment separation, and extensibility in mind.
 
@@ -12,55 +12,59 @@ This is not a demo-only project — it’s structured as a realistic, production
 Telemetry flow:
 
 - Telemetry Simulator
-  - .NET console app
-  - Sends JSON telemetry via Azure IoT Hub Device SDK
-  - Simulates buildings → rooms → sensors
-  - Configurable via environment variables (room count, sensor count, interval, env)
+  - .NET console app (net10.0)
+  - Sends per-room JSON telemetry via Azure IoT Hub Device SDK
+  - Simulates a single building with multiple rooms and HVAC behavior
+  - Configurable via environment variables (`SIM_ROOMS`, `SIM_INTERVAL_MS`, `ILMARI_ENV`)
 - Azure IoT Hub
   - Primary ingestion point for device telemetry
-- Azure Functions (Isolated, .NET 10 preferred)
-  - Windows Consumption (Y1) plan
+- Azure Functions (Isolated, net8.0)
+  - Consumption (Y1) plan
   - Event-driven ingestion (IoT Hub / Event Hub trigger)
   - Responsible for:
-    - Parsing telemetry
-    - Enriching metadata
-    - Updating Azure Digital Twins
+    - Parsing telemetry (batch of events)
+    - Updating Azure Digital Twins for Room + HvacUnit
     - Emitting logs/metrics
 - Azure Digital Twins (ADT)
-  - Models buildings, rooms, and sensors
-  - Keeps last known sensor state
+  - Models building, floor, room, sensors, and HVAC units
+  - Keeps last known state for room + HVAC twins
   - Used as the system of record for topology + state
 - Observability & Messaging
   - Application Insights
-  - (Optional / planned) Service Bus for downstream consumers
+  - Service Bus (provisioned; optional for downstream consumers)
 
 ### 🧩 Digital Twin Modeling
 
 DTDL v2 models
 
-Example Sensor model:
+Room model excerpt:
 
 ```json
 {
   "@context": "dtmi:dtdl:context;2",
-  "@id": "dtmi:ilmari:building:Sensor;1",
+  "@id": "dtmi:ilmari:building:Room;1",
   "@type": "Interface",
-  "displayName": "Sensor",
+  "displayName": "Room",
   "contents": [
-    { "@type": "Property", "name": "sensorType", "schema": "string" },
-    { "@type": "Property", "name": "unit", "schema": "string" },
-    { "@type": "Property", "name": "lastValue", "schema": "double" },
-    { "@type": "Property", "name": "lastTimestamp", "schema": "dateTime" },
-    { "@type": "Property", "name": "status", "schema": "string" }
+    { "@type": "Property", "name": "roomId", "schema": "string" },
+    { "@type": "Property", "name": "occupancy", "schema": "boolean" },
+    { "@type": "Property", "name": "tempC", "schema": "double" },
+    { "@type": "Property", "name": "humidityPct", "schema": "double" },
+    { "@type": "Property", "name": "co2Ppm", "schema": "double" },
+    { "@type": "Property", "name": "energyKw", "schema": "double" },
+    { "@type": "Property", "name": "lastUpdated", "schema": "dateTime" }
   ]
 }
 ```
 
 Twin graph structure:
 
-Building → Room → Sensor
+Building → Floor → Room
 
-Functions update sensor twins with latest telemetry values.
+Room → HvacUnit (servedBy)
+Room → Sensor (hasSensor)
+
+Functions update Room + HvacUnit twins with latest telemetry values.
 
 ### 🚀 Deployment & Tooling
 
@@ -72,8 +76,8 @@ Functions update sensor twins with latest telemetry values.
   - Monitoring
 - Deployment scripts:
   - Infra provisioning
-  - Function App deployment
-  - Simulator deployment
+  - ADT bootstrapper (models + sample graph)
+  - Simulator provisioning
   - Function App settings injected automatically (e.g., `ADT_SERVICE_URL`)
 - Local development via Azure Functions Core Tools
 
@@ -81,7 +85,9 @@ Functions update sensor twins with latest telemetry values.
 
 Language: C#
 
-Runtime: .NET isolated (targeting .NET 10 where possible, currently constrained by Azure Functions support)
+Runtime:
+- Functions: .NET isolated (net8.0)
+- Simulator + ADT bootstrapper: net10.0
 
 Azure Services:
 - IoT Hub
