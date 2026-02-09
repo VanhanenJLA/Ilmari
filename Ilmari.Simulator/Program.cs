@@ -21,7 +21,7 @@ Console.WriteLine("Sending telemetry to IoT Hub as one device (multi-room payloa
 // -------- Simulation model --------
 
 var rng = new Random(42);
-var buildingId = $"bldg-ilmari-{env}";
+var buildingId = $"building-ilmari-{env}";
 var rooms = Enumerable.Range(0, roomCount)
     .Select(i => new RoomState(
         $"{buildingId}-room-{101 + i}",
