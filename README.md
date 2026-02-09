@@ -14,6 +14,7 @@ Azure IIoT scaffold for a simple building Digital Twins demo. It deploys core Az
 - .NET SDK (net8.0).
 - PowerShell.
 - Azure Functions Core Tools (only for local function host).
+  - Homebrew: `brew tap azure/functions` then `brew install azure-functions-core-tools@4`
 - Access to the target Azure subscription.
 
 ## Quick start (dev flow)
