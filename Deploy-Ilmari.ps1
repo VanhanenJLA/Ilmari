@@ -33,11 +33,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host @'
-    ,--.,--.                         ,--. 
-    `--'|  |,--,--,--. ,--,--.,--.--.`--' 
-    ,--.|  ||        |' ,-.  ||  .--',--. 
-    |  ||  ||  |  |  |\ '-'  ||  |   |  | 
-    `--'`--'`--`--`--' `--`--'`--'   `--'
+  ,--.,--.                         ,--. 
+  `--'|  |,--,--,--. ,--,--.,--.--.`--' 
+  ,--.|  ||        |' ,-.  ||  .--',--. 
+  |  ||  ||  |  |  |\ '-'  ||  |   |  | 
+  `--'`--'`--`--`--' `--`--'`--'   `--'
 '@
 
 Write-Host "Env:        $Env"
@@ -49,13 +49,13 @@ Write-Host ""
 
 # 1) Ensure logged in
 Write-Host "Checking Azure CLI session..."
-az account show 1>$null 2>$null
+az account show | Out-Null
 if ($LASTEXITCODE -ne 0) {
   throw "Not logged in to Azure CLI. Run: az login"
 }
 
 # 2) Register required providers (safe to run repeatedly)
-Write-Host "Registering resource providers (idempotent)..."
+Write-Host "Registering resource providers..."
 $providers = @(
   "Microsoft.DigitalTwins",
   "Microsoft.Devices",
@@ -69,22 +69,22 @@ $providers = @(
 )
 
 foreach ($p in $providers) {
-  az provider register --namespace $p 1>$null
+  az provider register --namespace $p | Out-Null
 }
 
 # 3) Create RG if missing
 Write-Host "Ensuring resource group exists..."
 $rgExists = az group exists --name $ResourceGroupName | ConvertFrom-Json
 if (-not $rgExists) {
-  az group create --name $ResourceGroupName --location $Location 1>$null
+  az group create --name $ResourceGroupName --location $Location | Out-Null
   Write-Host "Created resource group: $ResourceGroupName"
 } else {
-  Write-Host "Resource group already exists: $ResourceGroupName"
+  Write-Host "Resource group exists: $ResourceGroupName"
 }
 
 # 4) Optional: compile bicep for sanity
-Write-Host "Compiling Bicep (sanity check)..."
-az bicep build --file $TemplateFile 1>$null
+Write-Host "Compiling Bicep..."
+az bicep build --file $TemplateFile | Out-Null
 
 # 5) Deploy
 Write-Host "Deploying Bicep..."
@@ -94,14 +94,15 @@ az deployment group create `
   --name $deploymentName `
   --resource-group $ResourceGroupName `
   --template-file $TemplateFile `
-  --parameters env=$Env projectName=$ProjectName location=$Location
+  --parameters env=$Env projectName=$ProjectName location=$Location `
+  --only-show-errors | Out-Null
 
 Write-Host ""
 Write-Host "✅ Deployment completed."
+Write-Host ""
 
 # 6) Discover DT + Function names (by resource type + CAF prefix)
 Write-Host "Discovering Azure Digital Twins + Function App resources..."
-
 $adtName = az resource list -g $ResourceGroupName `
   --resource-type "Microsoft.DigitalTwins/digitalTwinsInstances" `
   --query "[?starts_with(name, 'dt-$ProjectName-$Env')].name | [0]" -o tsv
@@ -129,6 +130,7 @@ if ([string]::IsNullOrWhiteSpace($iotHubName)) {
 Write-Host "ADT instance:     $adtName"
 Write-Host "Function App:     $functionAppName"
 Write-Host "IoT Hub:          $iotHubName"
+Write-Host ""
 
 # 6.5) Ensure caller has ADT data-plane RBAC on the ADT instance (idempotent)
 Write-Host "Ensuring caller has Azure Digital Twins Data Owner on the ADT instance..."
@@ -177,13 +179,14 @@ if ($existing -eq "0") {
     --scope $adtId | Out-Null
 
   # RBAC propagation can take a moment; this avoids immediate 403s in bootstrap
-  Write-Host "Waiting for RBAC propagation..."
-  Start-Sleep -Seconds 20
+  Write-Host "Sleeping 10s to ensure RBAC propagation..."
+  Start-Sleep -Seconds 10
 } else {
   Write-Host "Role already assigned."
 }
 
 # 7) Set ADT_SERVICE_URL using real ADT hostname (api.neu...)
+Write-Host ""
 Write-Host "Fetching ADT hostname..."
 $adtHost = az resource show `
   -g $ResourceGroupName `
@@ -240,6 +243,7 @@ if ([string]::IsNullOrWhiteSpace($sharedAccessKeyName) -or [string]::IsNullOrWhi
 
 $ehConnStr = "Endpoint=$ehEndpoint;SharedAccessKeyName=$sharedAccessKeyName;SharedAccessKey=$sharedAccessKey;EntityPath=$iotHubName"
 
+Write-Host ""
 Write-Host "Updating Function App app settings..."
 
 az functionapp config appsettings set `
@@ -249,6 +253,10 @@ az functionapp config appsettings set `
     "IOTHUB_EVENTHUB_PATH=$ehPath" `
     "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr" | Out-Null
 
+Write-Host ""
+Write-Host "ADT_SERVICE_URL=$adtServiceUrl"
+Write-Host "IOTHUB_EVENTHUB_PATH=$ehPath"
+Write-Host "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr"
 Write-Host "✅ App setting updated."
 
 # 8) Optional: run ADT bootstrapper
@@ -257,10 +265,10 @@ if ($RunAdtBootstrap) {
     throw "BootstrapProject not found: $BootstrapProject"
   }
 
+  Write-Host ""
   Write-Host "Running ADT bootstrapper..."
   $env:ADT_SERVICE_URL = $adtServiceUrl
   $env:ILMARI_ENV = $Env
-
   dotnet run --project $BootstrapProject
 }
 
@@ -279,4 +287,4 @@ if ($RunIngestor) {
   dotnet run --project $IngestorProject
 }
 
-Write-Host "Done. List resources: az resource list -g $ResourceGroupName -o table"
+Write-Host "✅ Done. List resources: az resource list -g $ResourceGroupName -o table"
