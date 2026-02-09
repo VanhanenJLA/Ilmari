@@ -21,7 +21,13 @@ param(
   [switch]$RunAdtBootstrap,
 
   # If running bootstrapper: path to csproj
-  [string]$BootstrapProject = "./Ilmari.AdtBootstrap/Ilmari.AdtBootstrap.csproj"
+  [string]$BootstrapProject = "./Ilmari.AdtBootstrap/Ilmari.AdtBootstrap.csproj",
+
+  # Optional: run the ingestor locally after deployment (blocks in foreground)
+  [switch]$RunIngestor,
+
+  # If running ingestor: path to csproj
+  [string]$IngestorProject = "./Ilmari.Ingestor/Ilmari.Ingestor.csproj"
 )
 
 $ErrorActionPreference = "Stop"
@@ -257,8 +263,20 @@ if ($RunAdtBootstrap) {
 
   dotnet run --project $BootstrapProject
 }
-else {
-  Write-Host "Tip: run bootstrapper with -RunAdtBootstrap once you've added it."
+
+# 9) Optional: run ingestor locally (foreground)
+if ($RunIngestor) {
+  if (-not (Test-Path $IngestorProject)) {
+    throw "IngestorProject not found: $IngestorProject"
+  }
+
+  Write-Host ""
+  Write-Host "Running ingestor locally (Ctrl+C to stop)..."
+  $env:ADT_SERVICE_URL = $adtServiceUrl
+  $env:IOTHUB_EVENTHUB_PATH = $ehPath
+  $env:IOTHUB_EVENTHUB_CONNECTION = $ehConnStr
+
+  dotnet run --project $IngestorProject
 }
 
 Write-Host "Done. List resources: az resource list -g $ResourceGroupName -o table"
