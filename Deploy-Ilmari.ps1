@@ -253,6 +253,18 @@ if ([string]::IsNullOrWhiteSpace($sharedAccessKeyName) -or [string]::IsNullOrWhi
 $ehConnStr = "Endpoint=$ehEndpoint;SharedAccessKeyName=$sharedAccessKeyName;SharedAccessKey=$sharedAccessKey;EntityPath=$iotHubName"
 
 Write-Host ""
+Write-Host "Fetching Service Bus connection string..."
+$sbConnStr = az servicebus namespace authorization-rule keys list `
+  -g $ResourceGroupName `
+  --namespace-name $sbNamespaceName `
+  --name "RootManageSharedAccessKey" `
+  --query "primaryConnectionString" -o tsv
+
+if ([string]::IsNullOrWhiteSpace($sbConnStr)) {
+  throw "Failed to resolve Service Bus connection string for $sbNamespaceName"
+}
+
+Write-Host ""
 Write-Host "Updating Function App app settings..."
 
 az functionapp config appsettings set `
@@ -260,12 +272,15 @@ az functionapp config appsettings set `
   --settings `
     "ADT_SERVICE_URL=$adtServiceUrl" `
     "IOTHUB_EVENTHUB_NAME=$iotHubName" `
-    "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr" | Out-Null
+    "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr" `
+    "ALERTS_SERVICEBUS_CONNECTION=$sbConnStr" `
+    "ALERTS_TOPIC_NAME=$alertsTopicName" | Out-Null
 
 Write-Host ""
 Write-Host "ADT_SERVICE_URL=$adtServiceUrl"
 Write-Host "IOTHUB_EVENTHUB_NAME=$iotHubName"
 Write-Host "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr"
+Write-Host "ALERTS_TOPIC_NAME=$alertsTopicName"
 Write-Host "✅ App setting updated."
 
 # 8) Optional: publish functions to Function App
