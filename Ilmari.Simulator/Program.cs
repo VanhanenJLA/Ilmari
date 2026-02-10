@@ -12,7 +12,7 @@ var connStr = configuration["IOTHUB_DEVICE_CONNECTION_STRING"]
               ?? throw new InvalidOperationException("Missing IOTHUB_DEVICE_CONNECTION_STRING in User Secrets or env vars.");
 
 var env = EnvStr("ILMARI_ENV", "dev");
-var roomCount = EnvInt("SIM_ROOMS", 5);
+var roomCount = EnvInt("SIM_ROOMS", 2);
 var intervalMs = EnvInt("SIM_INTERVAL_MS", 5000);
 
 var deviceClient = DeviceClient.CreateFromConnectionString(
