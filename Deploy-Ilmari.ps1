@@ -27,7 +27,19 @@ param(
   [switch]$RunIngestor,
 
   # If running ingestor: path to csproj
-  [string]$IngestorProject = "./Ilmari.Ingestor/Ilmari.Ingestor.csproj"
+  [string]$IngestorProject = "./Ilmari.Ingestor/Ilmari.Ingestor.csproj",
+
+  # Optional: publish ingestor to the deployed Function App
+  [switch]$PublishIngestor,
+
+  # Optional: provision a simulated device after deployment
+  [switch]$DeploySim,
+
+  # If provisioning a simulated device: path to script
+  [string]$DeploySimScript = "./Deploy-Simulated-Device.ps1",
+
+  # If provisioning a simulated device: device id
+  [string]$SimDeviceId = "ilmari-sim-01"
 )
 
 $ErrorActionPreference = "Stop"
@@ -251,7 +263,24 @@ Write-Host "IOTHUB_EVENTHUB_NAME=$iotHubName"
 Write-Host "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr"
 Write-Host "✅ App setting updated."
 
-# 8) Optional: run ADT bootstrapper
+# 8) Optional: publish ingestor to Function App
+if ($PublishIngestor) {
+  $ingestorDir = Split-Path -Parent $IngestorProject
+  if (-not (Test-Path $ingestorDir)) {
+    throw "Ingestor project directory not found: $ingestorDir"
+  }
+
+  Write-Host ""
+  Write-Host "Publishing ingestor to Function App..."
+  Push-Location $ingestorDir
+  try {
+    func azure functionapp publish $functionAppName --dotnet-isolated
+  } finally {
+    Pop-Location
+  }
+}
+
+# 9) Optional: run ADT bootstrapper
 if ($RunAdtBootstrap) {
   if (-not (Test-Path $BootstrapProject)) {
     throw "BootstrapProject not found: $BootstrapProject"
@@ -264,7 +293,18 @@ if ($RunAdtBootstrap) {
   dotnet run --project $BootstrapProject
 }
 
-# 9) Optional: run ingestor locally (foreground)
+# 10) Optional: provision a simulated device
+if ($DeploySim) {
+  if (-not (Test-Path $DeploySimScript)) {
+    throw "DeploySimScript not found: $DeploySimScript"
+  }
+
+  Write-Host ""
+  Write-Host "Provisioning simulated device..."
+  & $DeploySimScript -Env $Env -ProjectName $ProjectName -ResourceGroupName $ResourceGroupName -DeviceId $SimDeviceId
+}
+
+# 11) Optional: run ingestor locally (foreground)
 if ($RunIngestor) {
   if (-not (Test-Path $IngestorProject)) {
     throw "IngestorProject not found: $IngestorProject"
