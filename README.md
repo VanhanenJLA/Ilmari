@@ -6,7 +6,7 @@ Azure IIoT scaffold for a simple building Digital Twins demo. It deploys core Az
 - Infrastructure as code: `ilmari.bicep` (compiled template in `ilmari.json`).
 - Deployment script: `Deploy-Ilmari.ps1` (Azure CLI driven).
 - Bootstrapper: `Ilmari.AdtBootstrap` (uploads models and seeds a sample twin graph).
-- Ingestor: `Ilmari.Ingestor` (Azure Functions isolated worker, Event Hub trigger -> ADT updates).
+- Functions: `Ilmari.Functions` (Azure Functions isolated worker, Event Hub trigger -> ADT updates).
 - Simulator: `Ilmari.Simulator` (console app sending telemetry to IoT Hub).
 
 ## Prerequisites
@@ -43,11 +43,11 @@ $env:IOTHUB_DEVICE_CONNECTION_STRING="..."
 dotnet run --project ./Ilmari.Simulator/Ilmari.Simulator.csproj
 ```
 
-5) Run the ingestor locally or deploy it to the Function App (see below).
+5) Run the functions locally or deploy them to the Function App (see below).
 
 ## Local development
-### Ingestor (Functions)
-The function reads IoT Hub events via the Event Hub-compatible endpoint and patches ADT twins.
+### Functions (Azure Functions)
+The functions read IoT Hub events via the Event Hub-compatible endpoint and patches ADT twins.
 
 Required settings:
 - `ADT_SERVICE_URL` (e.g. `https://<adt-hostname>`).
@@ -55,7 +55,7 @@ Required settings:
 - `IOTHUB_EVENTHUB_CONNECTION` (Event Hub-compatible connection string from the IoT Hub built-in endpoint).
 - `AzureWebJobsStorage` (required by the Functions host when running locally).
 
-Create a `Ilmari.Ingestor/local.settings.json` (do not commit):
+Create a `Ilmari.Functions/local.settings.json` (do not commit):
 
 ```json
 {
@@ -73,7 +73,7 @@ Create a `Ilmari.Ingestor/local.settings.json` (do not commit):
 Then:
 
 ```powershell
-dotnet run --project ./Ilmari.Ingestor/Ilmari.Ingestor.csproj
+dotnet run --project ./Ilmari.Functions/Ilmari.Functions.csproj
 ```
 
 Authentication to ADT uses `DefaultAzureCredential`, so `az login` or a signed-in IDE should be enough for local runs.
@@ -100,7 +100,7 @@ Deploy-Simulator.ps1
 Ilmari.AdtBootstrap/
   Program.cs
   Models/
-Ilmari.Ingestor/
+Ilmari.Functions/
   IngestTelemetry.cs
 Ilmari.Simulator/
   Program.cs

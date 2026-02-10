@@ -6,7 +6,7 @@
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>Ilmari.Ingestor</RootNamespace>
+        <RootNamespace>Ilmari.Functions</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

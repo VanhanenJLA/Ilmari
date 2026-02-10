@@ -23,14 +23,14 @@ param(
   # If running bootstrapper: path to csproj
   [string]$BootstrapProject = "./Ilmari.AdtBootstrap/Ilmari.AdtBootstrap.csproj",
 
-  # Optional: run the ingestor locally after deployment (blocks in foreground)
-  [switch]$RunIngestor,
+  # Optional: run the functions locally after deployment (blocks in foreground)
+  [switch]$RunFunctions,
 
-  # If running ingestor: path to csproj
-  [string]$IngestorProject = "./Ilmari.Ingestor/Ilmari.Ingestor.csproj",
+  # If running functions: path to csproj
+  [string]$FunctionsProject = "./Ilmari.Functions/Ilmari.Functions.csproj",
 
-  # Optional: publish ingestor to the deployed Function App
-  [switch]$PublishIngestor,
+  # Optional: publish functions to the deployed Function App
+  [switch]$PublishFunctions,
 
   # Optional: provision a simulated device after deployment
   [switch]$DeploySim,
@@ -263,16 +263,16 @@ Write-Host "IOTHUB_EVENTHUB_NAME=$iotHubName"
 Write-Host "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr"
 Write-Host "✅ App setting updated."
 
-# 8) Optional: publish ingestor to Function App
-if ($PublishIngestor) {
-  $ingestorDir = Split-Path -Parent $IngestorProject
-  if (-not (Test-Path $ingestorDir)) {
-    throw "Ingestor project directory not found: $ingestorDir"
+# 8) Optional: publish functions to Function App
+if ($PublishFunctions) {
+  $functionsDir = Split-Path -Parent $FunctionsProject
+  if (-not (Test-Path $functionsDir)) {
+    throw "Functions project directory not found: $functionsDir"
   }
 
   Write-Host ""
-  Write-Host "Publishing ingestor to Function App..."
-  Push-Location $ingestorDir
+  Write-Host "Publishing Ilmari.Functions..."
+  Push-Location $functionsDir
   try {
     func azure functionapp publish $functionAppName --dotnet-isolated
   } finally {
@@ -304,19 +304,19 @@ if ($DeploySim) {
   & $DeploySimScript -Env $Env -ProjectName $ProjectName -ResourceGroupName $ResourceGroupName -DeviceId $SimDeviceId
 }
 
-# 11) Optional: run ingestor locally (foreground)
-if ($RunIngestor) {
-  if (-not (Test-Path $IngestorProject)) {
-    throw "IngestorProject not found: $IngestorProject"
+# 11) Optional: run functions locally (foreground)
+if ($RunFunctions) {
+  if (-not (Test-Path $FunctionsProject)) {
+    throw "FunctionsProject not found: $FunctionsProject"
   }
 
   Write-Host ""
-  Write-Host "Running ingestor locally (Ctrl+C to stop)..."
+  Write-Host "Running functions locally (Ctrl+C to stop)..."
   $env:ADT_SERVICE_URL = $adtServiceUrl
   $env:IOTHUB_EVENTHUB_NAME = $iotHubName
   $env:IOTHUB_EVENTHUB_CONNECTION = $ehConnStr
 
-  dotnet run --project $IngestorProject
+  dotnet run --project $FunctionsProject
 }
 
 Write-Host "✅ Done. List resources: az resource list -g $ResourceGroupName -o table"

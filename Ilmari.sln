@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ilmari.AdtBootstrap", "Ilma
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ilmari.Simulator", "Ilmari.Simulator\Ilmari.Simulator.csproj", "{A39141C0-A718-4355-B860-B5668AA204C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ilmari.Ingestor", "Ilmari.Ingestor\Ilmari.Ingestor.csproj", "{A95CD6AB-FF30-48BD-A39E-94E718BD2C6C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ilmari.Functions", "Ilmari.Functions\Ilmari.Functions.csproj", "{A95CD6AB-FF30-48BD-A39E-94E718BD2C6C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Support", "Support", "{D270CA05-B059-4ED4-9509-CEED40A1713E}"
 	ProjectSection(SolutionItems) = preProject
