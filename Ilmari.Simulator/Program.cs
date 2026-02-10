@@ -1,8 +1,16 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Microsoft.Azure.Devices.Client;
+using Microsoft.Extensions.Configuration;
 
-var connStr = RequireEnv("IOTHUB_DEVICE_CONNECTION_STRING");
+var configuration = new ConfigurationBuilder()
+    .AddUserSecrets<Program>(optional: true)
+    .Build();
+
+var connStr = configuration["IOTHUB_DEVICE_CONNECTION_STRING"]
+              ?? Environment.GetEnvironmentVariable("IOTHUB_DEVICE_CONNECTION_STRING")
+              ?? throw new InvalidOperationException("Missing IOTHUB_DEVICE_CONNECTION_STRING in User Secrets or env vars.");
+
 var env = EnvStr("ILMARI_ENV", "dev");
 var roomCount = EnvInt("SIM_ROOMS", 5);
 var intervalMs = EnvInt("SIM_INTERVAL_MS", 5000);

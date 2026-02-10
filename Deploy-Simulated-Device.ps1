@@ -8,8 +8,6 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host "Provisioning simulated IoT device..."
-
-# Find IoT Hub
 $iotHubName = az resource list -g $ResourceGroupName `
   --resource-type "Microsoft.Devices/IotHubs" `
   --query "[?starts_with(name, 'iot-$ProjectName-$Env')].name | [0]" -o tsv
@@ -21,25 +19,22 @@ if ([string]::IsNullOrWhiteSpace($iotHubName)) {
 Write-Host "IoT Hub: $iotHubName"
 Write-Host "DeviceId: $DeviceId"
 
-# Create device if missing
 $exists = az iot hub device-identity show `
   --hub-name $iotHubName `
   --device-id $DeviceId `
-  --resource-group $ResourceGroupName `
-  2>$null
+  --resource-group $ResourceGroupName | Out-Null
 
-if (-not $exists) {
+if ($exists) {
+    Write-Host "Device already exists. Skipping create."
+}
+else {
     az iot hub device-identity create `
     --hub-name $iotHubName `
     --device-id $DeviceId `
     --resource-group $ResourceGroupName | Out-Null
-    Write-Host "Device created."
-}
-else {
-    Write-Host "Device already exists. Skipping create."
+    Write-Host "✅ Device created."
 }
 
-# Get connection string
 $connStr = az iot hub device-identity connection-string show `
   --hub-name $iotHubName `
   --device-id $DeviceId `
@@ -50,5 +45,5 @@ Write-Host ""
 Write-Host "Device connection string:"
 Write-Host $connStr
 Write-Host ""
-Write-Host "Set it as:"
-Write-Host '$env:IOTHUB_DEVICE_CONNECTION_STRING="..."'
+Write-Host "Saving to .NET User Secrets for Ilmari.Simulator..."
+dotnet user-secrets set "IOTHUB_DEVICE_CONNECTION_STRING" "$connStr" --project "./Ilmari.Simulator/Ilmari.Simulator.csproj"
