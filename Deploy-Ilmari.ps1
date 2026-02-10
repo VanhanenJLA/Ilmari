@@ -139,9 +139,14 @@ if ([string]::IsNullOrWhiteSpace($iotHubName)) {
   throw "Could not find IoT Hub in RG $ResourceGroupName with prefix iot-$ProjectName-$Env"
 }
 
+$sbNamespaceName = "sbns-$ProjectName-$Env"
+$alertsTopicName = "sbt-$ProjectName-$Env"
+
 Write-Host "ADT instance:     $adtName"
 Write-Host "Function App:     $functionAppName"
 Write-Host "IoT Hub:          $iotHubName"
+Write-Host "SB Namespace:     $sbNamespaceName"
+Write-Host "Alerts Topic:     $alertsTopicName"
 Write-Host ""
 
 # 6.5) Ensure caller has ADT data-plane RBAC on the ADT instance (idempotent)

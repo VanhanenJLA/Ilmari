@@ -93,6 +93,15 @@ resource sbQueueEvents 'Microsoft.ServiceBus/namespaces/queues@2022-10-01-previe
   }
 }
 
+resource sbTopicAlerts 'Microsoft.ServiceBus/namespaces/topics@2022-10-01-preview' = {
+  parent: sb
+  name: 'sbt-${projectName}-${env}'
+  properties: {
+    maxSizeInMegabytes: 1024
+    enablePartitioning: false
+  }
+}
+
 resource iotHub 'Microsoft.Devices/IotHubs@2023-06-30' = {
   name: nameIotHub
   location: location
