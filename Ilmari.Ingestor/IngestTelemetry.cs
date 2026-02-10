@@ -30,7 +30,7 @@ public class IngestTelemetry
 
     [Function("IngestTelemetry")]
     public async Task Run(
-        [EventHubTrigger("%IOTHUB_EVENTHUB_PATH%", Connection = "IOTHUB_EVENTHUB_CONNECTION")]
+        [EventHubTrigger("%IOTHUB_EVENTHUB_NAME%", Connection = "IOTHUB_EVENTHUB_CONNECTION")]
         string[] events,
         FunctionContext context)
     {

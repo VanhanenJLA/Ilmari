@@ -51,7 +51,7 @@ The function reads IoT Hub events via the Event Hub-compatible endpoint and patc
 
 Required settings:
 - `ADT_SERVICE_URL` (e.g. `https://<adt-hostname>`).
-- `IOTHUB_EVENTHUB_PATH` (usually `messages/events` for IoT Hub).
+- `IOTHUB_EVENTHUB_NAME` (the IoT Hub name; matches the Event Hub-compatible entity path).
 - `IOTHUB_EVENTHUB_CONNECTION` (Event Hub-compatible connection string from the IoT Hub built-in endpoint).
 - `AzureWebJobsStorage` (required by the Functions host when running locally).
 
@@ -64,7 +64,7 @@ Create a `Ilmari.Ingestor/local.settings.json` (do not commit):
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "ADT_SERVICE_URL": "https://<adt-hostname>",
-    "IOTHUB_EVENTHUB_PATH": "messages/events",
+    "IOTHUB_EVENTHUB_NAME": "<iot-hub-name>",
     "IOTHUB_EVENTHUB_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<iot-hub-name>"
   }
 }

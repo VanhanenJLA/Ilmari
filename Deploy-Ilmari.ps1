@@ -205,16 +205,8 @@ $ehEndpoint = az iot hub show `
   --name $iotHubName `
   --query "properties.eventHubEndpoints.events.endpoint" -o tsv
 
-$ehPath = az iot hub show `
-  --name $iotHubName `
-  --query "properties.eventHubEndpoints.events.path" -o tsv
-
 if ([string]::IsNullOrWhiteSpace($ehEndpoint)) {
   throw "Failed to fetch Event Hub-compatible endpoint for $iotHubName"
-}
-
-if ([string]::IsNullOrWhiteSpace($ehPath)) {
-  $ehPath = "messages/events"
 }
 
 $iotConnStr = az iot hub connection-string show `
@@ -250,12 +242,12 @@ az functionapp config appsettings set `
   -g $ResourceGroupName -n $functionAppName `
   --settings `
     "ADT_SERVICE_URL=$adtServiceUrl" `
-    "IOTHUB_EVENTHUB_PATH=$ehPath" `
+    "IOTHUB_EVENTHUB_NAME=$iotHubName" `
     "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr" | Out-Null
 
 Write-Host ""
 Write-Host "ADT_SERVICE_URL=$adtServiceUrl"
-Write-Host "IOTHUB_EVENTHUB_PATH=$ehPath"
+Write-Host "IOTHUB_EVENTHUB_NAME=$iotHubName"
 Write-Host "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr"
 Write-Host "✅ App setting updated."
 
@@ -281,7 +273,7 @@ if ($RunIngestor) {
   Write-Host ""
   Write-Host "Running ingestor locally (Ctrl+C to stop)..."
   $env:ADT_SERVICE_URL = $adtServiceUrl
-  $env:IOTHUB_EVENTHUB_PATH = $ehPath
+  $env:IOTHUB_EVENTHUB_NAME = $iotHubName
   $env:IOTHUB_EVENTHUB_CONNECTION = $ehConnStr
 
   dotnet run --project $IngestorProject
