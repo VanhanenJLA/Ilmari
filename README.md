@@ -1,12 +1,12 @@
 # Ilmari
 
-Azure IIoT scaffold for a simple building Digital Twins demo. It deploys core Azure resources (ADT, IoT Hub, Service Bus, Function App, monitoring, storage) and includes .NET apps for bootstrapping, ingestion, and simulation.
+Azure IIoT scaffold for a simple building Digital Twins demo. It deploys core Azure resources (ADT, IoT Hub, Service Bus, Function App, monitoring, storage) and includes .NET apps for bootstrapping, ingestion, alerting, and simulation.
 
 ## What's in the box
 - Infrastructure as code: `ilmari.bicep` (compiled template in `ilmari.json`).
 - Deployment script: `Deploy-Ilmari.ps1` (Azure CLI driven).
 - Bootstrapper: `Ilmari.AdtBootstrap` (uploads models and seeds a sample twin graph).
-- Functions: `Ilmari.Functions` (Azure Functions isolated worker, Event Hub trigger -> ADT updates).
+- Functions: `Ilmari.Functions` (Azure Functions isolated worker, Event Hub trigger -> ADT updates + scheduled alert rules).
 - Simulator: `Ilmari.Simulator` (console app sending telemetry to IoT Hub).
 
 ## Prerequisites
@@ -53,6 +53,8 @@ Required settings:
 - `ADT_SERVICE_URL` (e.g. `https://<adt-hostname>`).
 - `IOTHUB_EVENTHUB_NAME` (the IoT Hub name; matches the Event Hub-compatible entity path).
 - `IOTHUB_EVENTHUB_CONNECTION` (Event Hub-compatible connection string from the IoT Hub built-in endpoint).
+- `ALERTS_SERVICEBUS_CONNECTION` (Service Bus namespace connection string).
+- `ALERTS_TOPIC_NAME` (alerts topic name; default `sbt-<project>-<env>`).
 - `AzureWebJobsStorage` (required by the Functions host when running locally).
 
 Create a `Ilmari.Functions/local.settings.json` (do not commit):
@@ -65,7 +67,9 @@ Create a `Ilmari.Functions/local.settings.json` (do not commit):
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "ADT_SERVICE_URL": "https://<adt-hostname>",
     "IOTHUB_EVENTHUB_NAME": "<iot-hub-name>",
-    "IOTHUB_EVENTHUB_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<iot-hub-name>"
+    "IOTHUB_EVENTHUB_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<iot-hub-name>",
+    "ALERTS_SERVICEBUS_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...",
+    "ALERTS_TOPIC_NAME": "sbt-<project>-<env>"
   }
 }
 ```

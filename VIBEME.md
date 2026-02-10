@@ -25,6 +25,9 @@ Telemetry flow:
     - Parsing telemetry (batch of events)
     - Updating Azure Digital Twins for Room + HvacUnit
     - Emitting logs/metrics
+  - Scheduled rule processor (Timer trigger)
+    - Queries ADT for threshold breaches (e.g., temp out of range)
+    - Publishes alerts to Service Bus topic
 - Azure Digital Twins (ADT)
   - Models building, floor, room, sensors, and HVAC units
   - Keeps last known state for room + HVAC twins
