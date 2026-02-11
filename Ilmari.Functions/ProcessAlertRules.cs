@@ -19,7 +19,7 @@ public class ProcessAlertRules
     private readonly ServiceBusSender _sender;
     
     private const double TempMinC = 18;
-    private const double TempMaxC = 22;
+    private const double TempMaxC = 24;
 
     public ProcessAlertRules(ILoggerFactory loggerFactory)
     {
@@ -40,6 +40,10 @@ public class ProcessAlertRules
         TimerInfo timer, 
         FunctionContext context)
     {
+        _log.LogInformation("Info");
+        _log.LogWarning("Warning");
+        _log.LogError("Error");
+        
         var ct = context.CancellationToken;
         var query =
             $"SELECT $dtId, roomId, tempC " +
