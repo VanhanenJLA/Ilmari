@@ -45,10 +45,11 @@ var rooms = Enumerable.Range(0, roomCount)
     .ToList();
 
 // Scenario timeline (repeatable)
-// - At t=2min: Room 101 becomes occupied (CO2 rises)
+// - At t=1min: Room 101 becomes occupied 
 // - At t=4min: Room 102 waste: unoccupied but HVAC stuck on high
-// - At t=6min: Room 103 comfort violation: temp drifts high while occupied
-// - At t=8min: clear scenarios / return to normal, repeat
+// - At t=6min: Room 101 becomes unoccupied
+// - At t=8min: Room 101 temp: returns to normal
+// - At t=10min: Loop scenario
 var simStart = DateTimeOffset.UtcNow;
 
 while (true)
@@ -121,29 +122,34 @@ static void ApplyScenario(TimeSpan elapsed, List<RoomState> rooms)
     // Repeat every 10 minutes
     var t = elapsed.TotalMinutes % 10.0;
 
-    // Room 101 occupied from 2..8 min
-    if (t >= 2 && t < 8 && rooms.Count >= 1)
-        rooms[0].Occupancy = true;
-    else if (rooms.Count >= 1)
-        rooms[0].Occupancy = false;
+    var r101 = rooms[0];
+    var r102 = rooms[1];
+
+    // Room 101 occupied from 1..6 min
+    if (t is >= 1 and < 6) 
+        r101.Occupancy = true;
+    else
+        r101.Occupancy = false;
+    
+    // Room 101: comfort issue from 3..8 min (occupied, temp drifts hot)
+    if (t is >= 3 and < 8)
+    {
+        Console.WriteLine("Simulated comfort issue in room 101.");
+        r101.Occupancy = true;
+        r101.ComfortDriftHot = true;
+        r101.HvacMode = "off";
+        r101.SetpointC = 25.0;
+    }
 
     // Room 102: waste from 4..8 min (unoccupied but HVAC stuck high)
-    if (t >= 4 && t < 8 && rooms.Count >= 2)
+    if (t is >= 4 and < 8)
     {
-        rooms[1].Occupancy = false;
-        rooms[1].WasteStuckHvac = true;
-        rooms[1].HvacMode = "cool";
-        rooms[1].SetpointC = 21.0;
+        r102.Occupancy = false;
+        r102.WasteStuckHvac = true;
+        r102.HvacMode = "cool";
+        r102.SetpointC = 21.0;
     }
 
-    // Room 103: comfort issue from 6..8 min (occupied, temp drifts hot)
-    if (t >= 6 && t < 8 && rooms.Count >= 3)
-    {
-        rooms[2].Occupancy = true;
-        rooms[2].ComfortDriftHot = true;
-        rooms[2].HvacMode = "off";
-        rooms[2].SetpointC = 22.0;
-    }
 }
 
 static void StepRoom(DateTimeOffset now, RoomState r, Random rng)
