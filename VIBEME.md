@@ -1,113 +1,76 @@
-## 🔷 Ilmari IIoT Project — LLM Quick-Start Context
+## Ilmari IIoT Project - LLM Context (Current State)
 
-### 🧠 Project Overview
+### Snapshot (as of 2026-02-12)
 
-Ilmari is a cloud-native Industrial IoT (IIoT) reference implementation on Azure, focused on telemetry ingestion, digital twins, and observability.
-The goal is to simulate, ingest, process, and model building telemetry using Azure services and .NET isolated Azure Functions.
+Ilmari is an Azure-based IIoT reference implementation that is currently functional end-to-end for simulated telemetry ingestion, Digital Twins state updates, and rule-based alert publishing.
 
-This is not a demo-only project — it’s structured as a realistic, production-leaning architecture with infrastructure-as-code, environment separation, and extensibility in mind.
+### What Is Working
 
-### 🏗️ Core Architecture
+- Infrastructure deployment through `Deploy-Ilmari.ps1` and `ilmari.bicep`.
+- Telemetry simulation from `Ilmari.Simulator` (net10.0) to IoT Hub over MQTT.
+- Event ingestion in `Ilmari.Functions/IngestTelemetry.cs` (Event Hub trigger from IoT Hub endpoint).
+- ADT patch updates for Room and HVAC twins.
+- Scheduled alert processing in `Ilmari.Functions/ProcessAlertRules.cs`.
+- Service Bus topic publishing for threshold breaches (temperature and CO2).
+- Application Insights logging pipeline, including explicit Info-level override and exception middleware.
+
+### Implemented Architecture
 
 Telemetry flow:
 
-- Telemetry Simulator
-  - .NET console app (net10.0)
-  - Sends per-room JSON telemetry via Azure IoT Hub Device SDK
-  - Simulates a single building with multiple rooms and HVAC behavior
-  - Configurable via environment variables (`SIM_ROOMS`, `SIM_INTERVAL_MS`, `ILMARI_ENV`)
-- Azure IoT Hub
-  - Primary ingestion point for device telemetry
-- Azure Functions (Isolated, net8.0)
-  - Consumption (Y1) plan
-  - Event-driven ingestion (IoT Hub / Event Hub trigger)
-  - Responsible for:
-    - Parsing telemetry (batch of events)
-    - Updating Azure Digital Twins for Room + HvacUnit
-    - Emitting logs/metrics
-  - Scheduled rule processor (Timer trigger)
-    - Queries ADT for threshold breaches (e.g., temp out of range)
-    - Publishes alerts to Service Bus topic
-- Azure Digital Twins (ADT)
-  - Models building, floor, room, sensors, and HVAC units
-  - Keeps last known state for room + HVAC twins
-  - Used as the system of record for topology + state
-- Observability & Messaging
-  - Application Insights
-  - Service Bus (provisioned; optional for downstream consumers)
+1. `Ilmari.Simulator` sends per-room JSON telemetry events.
+2. IoT Hub receives device telemetry.
+3. `IngestTelemetry` function parses each event and updates ADT twin properties.
+4. `ProcessAlertRules` timer function queries ADT room twins every 10 seconds.
+5. Breaches are emitted as Service Bus messages.
 
-### 🧩 Digital Twin Modeling
+Key Azure services in active use:
 
-DTDL v2 models
-
-Room model excerpt:
-
-```json
-{
-  "@context": "dtmi:dtdl:context;2",
-  "@id": "dtmi:ilmari:building:Room;1",
-  "@type": "Interface",
-  "displayName": "Room",
-  "contents": [
-    { "@type": "Property", "name": "roomId", "schema": "string" },
-    { "@type": "Property", "name": "occupancy", "schema": "boolean" },
-    { "@type": "Property", "name": "tempC", "schema": "double" },
-    { "@type": "Property", "name": "humidityPct", "schema": "double" },
-    { "@type": "Property", "name": "co2Ppm", "schema": "double" },
-    { "@type": "Property", "name": "energyKw", "schema": "double" },
-    { "@type": "Property", "name": "lastUpdated", "schema": "dateTime" }
-  ]
-}
-```
-
-Twin graph structure:
-
-Building → Floor → Room
-
-Room → HvacUnit (servedBy)
-Room → Sensor (hasSensor)
-
-Functions update Room + HvacUnit twins with latest telemetry values.
-
-### 🚀 Deployment & Tooling
-
-- Infrastructure as Code: Bicep
-  - IoT Hub
-  - Azure Digital Twins
-  - Function App
-  - Service Bus
-  - Monitoring
-- Deployment scripts:
-  - Infra provisioning
-  - ADT bootstrapper (models + sample graph)
-  - Simulator provisioning
-  - Function App settings injected automatically (e.g., `ADT_SERVICE_URL`)
-- Local development via Azure Functions Core Tools
-
-### ⚙️ Tech Stack
-
-Language: C#
-
-Runtime:
-- Functions: .NET isolated (net8.0)
-- Simulator + ADT bootstrapper: net10.0
-
-Azure Services:
 - IoT Hub
-- Azure Functions
+- Azure Functions (isolated worker, .NET 8)
 - Azure Digital Twins
+- Service Bus
 - Application Insights
-- Service Bus (optional / future)
 
-### 🎯 Current Focus Areas
+### Current Rules Engine Status
 
-- Telemetry ingestion correctness (batch vs single event handling)
-- EventHubTrigger configuration for IoT Hub messages
-- Clean separation between:
-  - Simulation
-  - Ingestion
-  - Twin updates
-- Preparing for future additions:
-  - Rules/alerts
-  - Historical storage
-  - Real-time dashboards
+Implemented rules:
+
+- `TempOutOfRange`: min 18 C, max 24 C, severity 2.
+- `Co2OutOfRange`: max 1000 ppm, severity 2.
+
+Current behavior:
+
+- One alert per breached metric per room per timer evaluation.
+- No deduplication/suppression window yet.
+- Alert payload and Service Bus application properties are structured and consistent.
+
+### Simulator Status
+
+`Ilmari.Simulator` currently includes deterministic scenario logic:
+
+- Occupancy transitions.
+- Comfort drift (temperature issue) scenario.
+- CO2 drift scenario.
+- HVAC mode/setpoint/power variation.
+
+Configurable via:
+
+- `IOTHUB_DEVICE_CONNECTION_STRING` (required)
+- `ILMARI_ENV`
+- `SIM_ROOMS`
+- `SIM_INTERVAL_MS`
+
+### Known Gaps / Risks
+
+- `Ilmari.AdtBootstrap/Program.cs` currently uses a hardcoded ADT URL instead of env-driven configuration.
+- Alerting currently lacks deduplication, cooldown windows, and recovery events.
+- No historical data sink yet (only current state in ADT + emitted alerts).
+- Local development docs and deployment docs are mostly current, but bootstrap configuration should be aligned with the rest of the env-based setup.
+
+### Recommended Next Steps
+
+1. Remove hardcoded ADT URL in bootstrap; require `ADT_SERVICE_URL`.
+2. Add alert deduplication/cooldown and explicit recovery messages.
+3. Introduce a time-series sink for telemetry history and trend analysis.
+4. Add tests for ingestion parsing edge cases and rule evaluation behavior.
