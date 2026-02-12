@@ -12,10 +12,10 @@ public class ProcessAlertRules
 {
     private const string RoomModelId = "dtmi:ilmari:building:Room;1";
     private static readonly RuleDefinition[] Rules =
-    {
+    [
         new("TempOutOfRange", "tempC", "C", 2, 18, 24, room => room.TempC),
         new("Co2OutOfRange", "co2Ppm", "ppm", 2, null, 1000, room => room.Co2Ppm)
-    };
+    ];
 
     private readonly ILogger _log;
     private readonly DigitalTwinsClient _dt;
@@ -59,7 +59,6 @@ public class ProcessAlertRules
                 continue;
             }
 
-            var roomId = room.RoomId;
             foreach (var rule in Rules)
             {
                 var observedValue = rule.SelectValue(room);
