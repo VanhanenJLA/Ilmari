@@ -67,19 +67,13 @@ public class ProcessAlertRules
                 
                 if (breach is null) continue;
 
-                var alert = new AlertMessage(
+                var alert = new AlertMessage(DateTimeOffset.UtcNow,
+                    room.Id,
                     rule.AlertType,
                     rule.Severity,
-                    room.Id,
-                    roomId,
-                    DateTimeOffset.UtcNow,
                     rule.Metric,
                     rule.Unit,
-                    observedValue,
-                    rule.MinValue,
-                    rule.MaxValue,
-                    breach
-                );
+                    observedValue, rule.MinValue, rule.MaxValue, breach);
 
                 var body = JsonSerializer.Serialize(alert);
                 var message = new ServiceBusMessage(body)
@@ -88,7 +82,6 @@ public class ProcessAlertRules
                     {
                         ["AlertType"] = alert.AlertType,
                         ["Severity"] = alert.Severity,
-                        ["RoomId"] = alert.RoomId,
                         ["TwinId"] = alert.TwinId,
                         ["Metric"] = alert.Metric
                     }
@@ -110,18 +103,16 @@ public class ProcessAlertRules
         ?? throw new InvalidOperationException($"Missing {name}");
 
     private record AlertMessage(
+        DateTimeOffset ObservedAt,
+        string TwinId,
         string AlertType,
         int Severity,
-        string TwinId,
-        string RoomId,
-        DateTimeOffset ObservedAt,
         string Metric,
         string Unit,
         double ObservedValue,
         double? MinValue,
         double? MaxValue,
-        string Breach
-    );
+        string Breach);
 
     private sealed class RuleDefinition(
         string alertType,
