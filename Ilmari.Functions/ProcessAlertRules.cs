@@ -40,9 +40,6 @@ public class ProcessAlertRules
         TimerInfo timer, 
         FunctionContext context)
     {
-        _log.LogInformation("Info");
-        _log.LogWarning("Warning");
-        _log.LogError("Error");
         
         var ct = context.CancellationToken;
         var query =
