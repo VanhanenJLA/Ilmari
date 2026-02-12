@@ -102,3 +102,5 @@ node_modules/
 dist/
 temp/
 tmp/
+
+ilmari.json
