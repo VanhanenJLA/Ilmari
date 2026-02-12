@@ -45,11 +45,11 @@ var rooms = Enumerable.Range(0, roomCount)
     .ToList();
 
 // Scenario timeline (repeatable)
-// - At t=1min: Room 101 becomes occupied 
-// - At t=4min: Room 102 waste: unoccupied but HVAC stuck on high
-// - At t=6min: Room 101 becomes unoccupied
-// - At t=8min: Room 101 temp: returns to normal
-// - At t=10min: Loop scenario
+// - At t=1min: Room 101 becomes occupied
+// - At t=2min: Room 102 CO2 starts rising
+// - At t=3min: Room 101 becomes unoccupied
+// - At t=4min: Room 101 temp and Room 102 CO2 return to normal
+// - At t=5min: Loop scenario
 var simStart = DateTimeOffset.UtcNow;
 
 while (true)
@@ -115,24 +115,24 @@ static void ApplyScenario(TimeSpan elapsed, List<RoomState> rooms)
     // Reset defaults each tick
     foreach (var r in rooms)
     {
-        r.WasteStuckHvac = false;
         r.ComfortDriftHot = false;
+        r.Co2DriftHigh = false;
     }
 
-    // Repeat every 10 minutes
-    var t = elapsed.TotalMinutes % 10.0;
+    // Repeat every 5 minutes
+    var t = elapsed.TotalMinutes % 5.0;
 
     var r101 = rooms[0];
     var r102 = rooms[1];
 
-    // Room 101 occupied from 1..6 min
-    if (t is >= 1 and < 6) 
+    // Room 101 occupied from 1..3 min
+    if (t is >= 1 and < 3) 
         r101.Occupancy = true;
     else
         r101.Occupancy = false;
     
-    // Room 101: comfort issue from 3..8 min (occupied, temp drifts hot)
-    if (t is >= 3 and < 8)
+    // Room 101: comfort issue from 1.5..4 min (occupied, temp drifts hot)
+    if (t is >= 2 and < 4)
     {
         Console.WriteLine("Simulated comfort issue in room 101.");
         r101.Occupancy = true;
@@ -141,13 +141,14 @@ static void ApplyScenario(TimeSpan elapsed, List<RoomState> rooms)
         r101.SetpointC = 25.0;
     }
 
-    // Room 102: waste from 4..8 min (unoccupied but HVAC stuck high)
-    if (t is >= 4 and < 8)
+    // Room 102: CO2 issue from 2..4 min
+    if (t is >= 2 and < 4)
     {
-        r102.Occupancy = false;
-        r102.WasteStuckHvac = true;
-        r102.HvacMode = "cool";
-        r102.SetpointC = 21.0;
+        Console.WriteLine("Simulated CO2 issue in room 102.");
+        r102.Occupancy = true;
+        r102.Co2DriftHigh = true;
+        r102.HvacMode = "eco";
+        r102.SetpointC = 22.0;
     }
 
 }
@@ -155,7 +156,7 @@ static void ApplyScenario(TimeSpan elapsed, List<RoomState> rooms)
 static void StepRoom(DateTimeOffset now, RoomState r, Random rng)
 {
     // Basic ambient drift
-    var ambient = 21.5;
+    var ambient = 21;
     var tempNoise = (rng.NextDouble() - 0.5) * 0.08;
     r.TempC += (ambient - r.TempC) * 0.02 + tempNoise;
 
@@ -171,7 +172,7 @@ static void StepRoom(DateTimeOffset now, RoomState r, Random rng)
 
     // HVAC behavior & energy
     // Simple control unless scenario overrides
-    if (!r.WasteStuckHvac && !r.ComfortDriftHot)
+    if (!r.Co2DriftHigh && !r.ComfortDriftHot)
     {
         // If occupied, HVAC maintains setpoint a bit
         if (r.Occupancy)
@@ -191,18 +192,18 @@ static void StepRoom(DateTimeOffset now, RoomState r, Random rng)
         }
     }
 
-    if (r.WasteStuckHvac)
-    {
-        // HVAC burns energy even though room unoccupied; temp changes slightly
-        r.HvacPowerKw = 2.2 + rng.NextDouble() * 0.4;
-        r.TempC += (r.SetpointC - r.TempC) * 0.03;
-    }
-
     if (r.ComfortDriftHot)
     {
         // Occupied but HVAC off; temperature drifts upward
-        r.TempC += 0.05 + rng.NextDouble() * 0.03;
+        r.TempC += 0.20 + rng.NextDouble() * 0.08;
         r.HvacPowerKw = 0.0;
+    }
+
+    if (r.Co2DriftHigh)
+    {
+        // CO2 rises despite normal occupancy.
+        r.Co2Ppm = Clamp(r.Co2Ppm + 18 + rng.NextDouble() * 8, 380, 2200);
+        r.HvacPowerKw = 0.2 + rng.NextDouble() * 0.2;
     }
 
     // Whole-room energy (HVAC + plug loads)
@@ -240,8 +241,8 @@ internal class RoomState
     public double SetpointC { get; set; }
 
     // Scenario flags
-    public bool WasteStuckHvac { get; set; }
     public bool ComfortDriftHot { get; set; }
+    public bool Co2DriftHigh { get; set; }
     
     public RoomState(
         string roomId,
