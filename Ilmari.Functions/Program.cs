@@ -9,18 +9,22 @@ var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
 
-builder.Logging.ClearProviders()
-    .AddConsole()
-    .SetMinimumLevel(LogLevel.Information)
-    .AddFilter("Microsoft", LogLevel.Warning)
-    .AddFilter("System", LogLevel.Warning)
-    .AddFilter("Function", LogLevel.Information)
-    .AddFilter(level => level == LogLevel.Information);
-
 builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 
+builder.Logging.Services.Configure<LoggerFilterOptions>(UnfilterLogLevelInfo);
+
 builder.UseMiddleware<ExceptionLoggingMiddleware>();
 
 builder.Build().Run();
+return;
+
+bool IsAppiProvider(LoggerFilterRule rule) => rule.ProviderName == "Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider";
+void UnfilterLogLevelInfo(LoggerFilterOptions options)
+{
+    // The Application Insights SDK adds a default logging filter that instructs ILogger to capture only Warning and more severe logs.
+    // Application Insights requires an explicit override.
+    var defaultRule = options.Rules.FirstOrDefault(IsAppiProvider);
+    if (defaultRule is not null) options.Rules.Remove(defaultRule);
+}
