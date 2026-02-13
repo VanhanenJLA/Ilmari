@@ -27,6 +27,7 @@ var adtDataOwnerRoleId = subscriptionResourceId('Microsoft.Authorization/roleDef
 var nameLogAnalytics = 'log-${projectName}-${env}'
 var nameAppInsights  = 'appi-${projectName}-${env}'
 var nameAsp          = 'asp-${projectName}-${env}'
+var nameWorkbook     = 'wb-${projectName}-${env}'
 
 // Common “global DNS-ish” resources: add suffix
 var nameAdt          = 'dt-${projectName}-${env}'
@@ -56,6 +57,74 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalytics.id
+  }
+}
+
+resource workbook 'Microsoft.Insights/workbooks@2022-04-01' = {
+  name: guid(resourceGroup().id, nameWorkbook)
+  location: location
+  tags: tags
+  kind: 'shared'
+  properties: {
+    displayName: 'Room telemetry (${projectName}-${env})'
+    sourceId: logAnalytics.id
+    category: 'workbook'
+    serializedData: string({
+      version: 'Notebook/1.0'
+      items: [
+        {
+          type: 1
+          content: {
+            json: 'Room Temperatures'
+          }
+        }
+        {
+          type: 3
+          content: {
+            version: 'KqlItem/1.0'
+            title: ''
+            query: '''
+let lookback = 1h;
+AppTraces
+| where TimeGenerated >= ago(lookback)
+| where Message startswith "RoomTelemetry"
+| extend req = parse_json(tostring(Properties["required"]))
+| extend roomId = tostring(req.RoomId),
+         tempC  = todouble(req.TempC)
+| summarize
+    AvgTempC = avg(tempC),
+    LatestTempC = arg_max(TimeGenerated, tempC).tempC
+  by roomId, bin(TimeGenerated, 1m)
+| order by TimeGenerated asc
+'''
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+            resourceIds: [
+              logAnalytics.id
+            ]
+            visualization: 'timechart'
+            visualizationSettings: {
+              chartType: 'line'
+              legend: {
+                isVisible: false
+              }
+              xAxis: {
+                isVisible: true
+                label: 'Timestamp'
+              }
+              yAxis: {
+                isVisible: true
+                label: 'Celsius'
+              }
+            }
+          }
+        }
+      ]
+      isLocked: false
+      fallbackResourceIds: [
+        logAnalytics.id
+      ]
+    })
   }
 }
 
@@ -167,3 +236,4 @@ resource adtRoleAssign 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 
 output adtName string = adt.name
 output adtResourceId string = adt.id
+output workbookId string = workbook.id

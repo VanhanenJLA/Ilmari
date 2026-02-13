@@ -55,6 +55,7 @@ public class IngestTelemetry
             }
 
             await PatchAdtAsync(t, ct);
+            _log.LogInformation("RoomTelemetry {}", json);
         }
     }
 
