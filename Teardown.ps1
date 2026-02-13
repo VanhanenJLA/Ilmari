@@ -1,5 +1,6 @@
 param(
-    [string]$Env = "dev"
+    [string]$Env = "dev",
+    [switch]$YesYes
 )
 
 $project = "ilmari"
@@ -20,10 +21,14 @@ if ($Env -ne "dev") {
     exit 1
 }
 
-$confirm = Read-Host "Type '$rgName' to confirm deletion"
-if ($confirm -ne $rgName) {
-    Write-Error "Confirmation failed. Aborting."
-    exit 1
+if (-not $YesYes) {
+    $confirm = Read-Host "Type '$rgName' to confirm deletion"
+    if ($confirm -ne $rgName) {
+        Write-Error "Confirmation failed. Aborting."
+        exit 1
+    }
+} else {
+    Write-Host "Skipping confirmation prompt (--YesYes)."
 }
 
 Write-Host "Deleting resource group..."
