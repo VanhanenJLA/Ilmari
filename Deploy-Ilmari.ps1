@@ -252,7 +252,6 @@ if ([string]::IsNullOrWhiteSpace($sharedAccessKeyName) -or [string]::IsNullOrWhi
 
 $ehConnStr = "Endpoint=$ehEndpoint;SharedAccessKeyName=$sharedAccessKeyName;SharedAccessKey=$sharedAccessKey;EntityPath=$iotHubName"
 
-Write-Host ""
 Write-Host "Fetching Service Bus connection string..."
 $sbConnStr = az servicebus namespace authorization-rule keys list `
   -g $ResourceGroupName `
@@ -281,6 +280,7 @@ Write-Host "ADT_SERVICE_URL=$adtServiceUrl"
 Write-Host "IOTHUB_EVENTHUB_NAME=$iotHubName"
 Write-Host "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr"
 Write-Host "ALERTS_TOPIC_NAME=$alertsTopicName"
+Write-Host ""
 Write-Host "✅ App setting updated."
 
 # 8) Optional: publish functions to Function App
@@ -339,4 +339,7 @@ if ($RunFunctions) {
   dotnet run --project $FunctionsProject
 }
 
-Write-Host "✅ Done. List resources: az resource list -g $ResourceGroupName -o table"
+Write-Host ""
+Write-Host "✅ Deployment completed."
+Write-Host ""
+Write-Host "List resources: az resource list -g $ResourceGroupName -o table"

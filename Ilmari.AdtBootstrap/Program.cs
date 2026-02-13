@@ -116,6 +116,7 @@ for (var roomNumber = 101; roomNumber <= 102; roomNumber++)
 }
 
 Console.WriteLine("✅ Azure Data Twin bootstrap finished.");
+Console.WriteLine();
 Console.WriteLine("Try querying the ADT Explorer, e.g.:");
 Console.WriteLine($"SELECT * FROM digitaltwins WHERE IS_OF_MODEL('{M_Room}')");
 return;

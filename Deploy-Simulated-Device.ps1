@@ -7,7 +7,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "Provisioning simulated IoT device..."
 $iotHubName = az resource list -g $ResourceGroupName `
   --resource-type "Microsoft.Devices/IotHubs" `
   --query "[?starts_with(name, 'iot-$ProjectName-$Env')].name | [0]" -o tsv
@@ -16,13 +15,14 @@ if ([string]::IsNullOrWhiteSpace($iotHubName)) {
     throw "IoT Hub not found in RG $ResourceGroupName"
 }
 
+Write-Host  ""
 Write-Host "IoT Hub: $iotHubName"
 Write-Host "DeviceId: $DeviceId"
 
 $exists = az iot hub device-identity show `
   --hub-name $iotHubName `
   --device-id $DeviceId `
-  --resource-group $ResourceGroupName | Out-Null
+  --resource-group $ResourceGroupName
 
 if ($exists) {
     Write-Host "Device already exists. Skipping create."
