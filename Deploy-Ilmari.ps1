@@ -218,39 +218,29 @@ if ([string]::IsNullOrWhiteSpace($adtHost)) {
 $adtServiceUrl = "https://$adtHost"
 Write-Host "Fetching IoT Hub Event Hub-compatible settings..."
 
-$ehEndpoint = az iot hub show `
-  --name $iotHubName `
-  --query "properties.eventHubEndpoints.events.endpoint" -o tsv
-
-if ([string]::IsNullOrWhiteSpace($ehEndpoint)) {
-  throw "Failed to fetch Event Hub-compatible endpoint for $iotHubName"
-}
-
-$iotConnStr = az iot hub connection-string show `
+$ehConnStr = az iot hub connection-string show `
   --hub-name $iotHubName `
+  --default-eventhub `
   --policy-name iothubowner `
   --query "connectionString" -o tsv
 
-if ([string]::IsNullOrWhiteSpace($iotConnStr)) {
-  throw "Failed to fetch IoT Hub connection string for $iotHubName"
+if ([string]::IsNullOrWhiteSpace($ehConnStr)) {
+  throw "Failed to fetch Event Hub-compatible connection string for $iotHubName"
 }
 
 $csParts = @{}
-foreach ($p in ($iotConnStr -split ';')) {
+foreach ($p in ($ehConnStr -split ';')) {
   if ($p -match '=') {
     $kv = $p -split '=', 2
     $csParts[$kv[0]] = $kv[1]
   }
 }
 
-$sharedAccessKeyName = $csParts["SharedAccessKeyName"]
-$sharedAccessKey = $csParts["SharedAccessKey"]
+$ehEntityPath = $csParts["EntityPath"]
 
-if ([string]::IsNullOrWhiteSpace($sharedAccessKeyName) -or [string]::IsNullOrWhiteSpace($sharedAccessKey)) {
-  throw "Failed to parse SharedAccessKeyName/SharedAccessKey from IoT Hub connection string"
+if ([string]::IsNullOrWhiteSpace($ehEntityPath)) {
+  throw "Failed to parse EntityPath from Event Hub-compatible connection string for $iotHubName"
 }
-
-$ehConnStr = "Endpoint=$ehEndpoint;SharedAccessKeyName=$sharedAccessKeyName;SharedAccessKey=$sharedAccessKey;EntityPath=$iotHubName"
 
 Write-Host "Fetching Service Bus connection string..."
 $sbConnStr = az servicebus namespace authorization-rule keys list `
@@ -270,14 +260,14 @@ az functionapp config appsettings set `
   -g $ResourceGroupName -n $functionAppName `
   --settings `
     "ADT_SERVICE_URL=$adtServiceUrl" `
-    "IOTHUB_EVENTHUB_NAME=$iotHubName" `
+    "IOTHUB_EVENTHUB_NAME=$ehEntityPath" `
     "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr" `
     "ALERTS_SERVICEBUS_CONNECTION=$sbConnStr" `
     "ALERTS_TOPIC_NAME=$alertsTopicName" | Out-Null
 
 Write-Host ""
 Write-Host "ADT_SERVICE_URL=$adtServiceUrl"
-Write-Host "IOTHUB_EVENTHUB_NAME=$iotHubName"
+Write-Host "IOTHUB_EVENTHUB_NAME=$ehEntityPath"
 Write-Host "IOTHUB_EVENTHUB_CONNECTION=$ehConnStr"
 Write-Host "ALERTS_TOPIC_NAME=$alertsTopicName"
 Write-Host ""
@@ -333,7 +323,7 @@ if ($RunFunctions) {
   Write-Host ""
   Write-Host "Running functions locally (Ctrl+C to stop)..."
   $env:ADT_SERVICE_URL = $adtServiceUrl
-  $env:IOTHUB_EVENTHUB_NAME = $iotHubName
+  $env:IOTHUB_EVENTHUB_NAME = $ehEntityPath
   $env:IOTHUB_EVENTHUB_CONNECTION = $ehConnStr
 
   dotnet run --project $FunctionsProject

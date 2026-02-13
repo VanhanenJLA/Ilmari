@@ -51,8 +51,8 @@ The functions read IoT Hub events via the Event Hub-compatible endpoint and patc
 
 Required settings:
 - `ADT_SERVICE_URL` (e.g. `https://<adt-hostname>`).
-- `IOTHUB_EVENTHUB_NAME` (the IoT Hub name; matches the Event Hub-compatible entity path).
-- `IOTHUB_EVENTHUB_CONNECTION` (Event Hub-compatible connection string from the IoT Hub built-in endpoint).
+- `IOTHUB_EVENTHUB_NAME` (the Event Hub-compatible entity path; use the `EntityPath` from `az iot hub connection-string show --default-eventhub`).
+- `IOTHUB_EVENTHUB_CONNECTION` (Event Hub-compatible connection string from the IoT Hub built-in endpoint; get it via `az iot hub connection-string show --default-eventhub`).
 - `ALERTS_SERVICEBUS_CONNECTION` (Service Bus namespace connection string).
 - `ALERTS_TOPIC_NAME` (alerts topic name; default `sbt-<project>-<env>`).
 - `AzureWebJobsStorage` (required by the Functions host when running locally).
@@ -66,8 +66,8 @@ Create a `Ilmari.Functions/local.settings.json` (do not commit):
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "ADT_SERVICE_URL": "https://<adt-hostname>",
-    "IOTHUB_EVENTHUB_NAME": "<iot-hub-name>",
-    "IOTHUB_EVENTHUB_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<iot-hub-name>",
+    "IOTHUB_EVENTHUB_NAME": "<event-hub-compatible-entity-path>",
+    "IOTHUB_EVENTHUB_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<event-hub-compatible-entity-path>",
     "ALERTS_SERVICEBUS_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...",
     "ALERTS_TOPIC_NAME": "sbt-<project>-<env>"
   }
