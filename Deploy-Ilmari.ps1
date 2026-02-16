@@ -140,7 +140,7 @@ if ([string]::IsNullOrWhiteSpace($iotHubName)) {
 }
 
 $sbNamespaceName = "sbns-$ProjectName-$Env"
-$alertsTopicName = "sbt-$ProjectName-$Env"
+$alertsTopicName = "alerts-$ProjectName-$Env"
 
 Write-Host "ADT instance:     $adtName"
 Write-Host "Function App:     $functionAppName"

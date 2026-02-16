@@ -54,7 +54,7 @@ Required settings:
 - `IOTHUB_EVENTHUB_NAME` (the Event Hub-compatible entity path; use the `EntityPath` from `az iot hub connection-string show --default-eventhub`).
 - `IOTHUB_EVENTHUB_CONNECTION` (Event Hub-compatible connection string from the IoT Hub built-in endpoint; get it via `az iot hub connection-string show --default-eventhub`).
 - `ALERTS_SERVICEBUS_CONNECTION` (Service Bus namespace connection string).
-- `ALERTS_TOPIC_NAME` (alerts topic name; default `sbt-<project>-<env>`).
+- `ALERTS_TOPIC_NAME` (alerts topic name; default `alerts-<project>-<env>`).
 - `AzureWebJobsStorage` (required by the Functions host when running locally).
 
 Create a `Ilmari.Functions/local.settings.json` (do not commit):
@@ -69,7 +69,7 @@ Create a `Ilmari.Functions/local.settings.json` (do not commit):
     "IOTHUB_EVENTHUB_NAME": "<event-hub-compatible-entity-path>",
     "IOTHUB_EVENTHUB_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<event-hub-compatible-entity-path>",
     "ALERTS_SERVICEBUS_CONNECTION": "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...",
-    "ALERTS_TOPIC_NAME": "sbt-<project>-<env>"
+    "ALERTS_TOPIC_NAME": "alerts-<project>-<env>"
   }
 }
 ```
