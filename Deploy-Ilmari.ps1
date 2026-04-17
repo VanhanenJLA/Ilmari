@@ -202,6 +202,9 @@ if ($existing -eq "0") {
   Write-Host "Role already assigned."
 }
 
+Write-Host ""
+Write-Host "✅ RBAC configured."
+
 # 7) Set ADT_SERVICE_URL using real ADT hostname (api.neu...)
 Write-Host ""
 Write-Host "Fetching ADT hostname..."
